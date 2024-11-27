@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,6 +23,10 @@ public class Organisation extends BaseEntity {
     private String name;
     private String joinCode;
     private String description;
+
+    @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private List<CourseGroup> groups;
 
     @Override
     public boolean equals(Object o) {
