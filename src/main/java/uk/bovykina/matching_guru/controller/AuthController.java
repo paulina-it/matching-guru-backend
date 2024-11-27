@@ -33,20 +33,33 @@ public class AuthController {
     @GetMapping("/status")
     public ResponseEntity<?> checkAuthStatus() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            logger.warn("Unauthenticated access attempt to /auth/status");
+            logger.warn("Unauthenticated access attempt to /status");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
         }
 
         String email = authentication.getName();
+
         try {
             UserResponseDto userDto = userService.getUserByEmail(email);
+
+            if (userDto.getOrganisationId() != null) {
+                organisationService.getOrganisationById(userDto.getOrganisationId())
+                        .ifPresent(org -> userDto.setOrganisationName(org.getName()));
+            }
+
             return ResponseEntity.ok(userDto);
+
         } catch (UserNotFoundException e) {
-            logger.error("User not found during /auth/status check for email: {}", email, e);
+            logger.error("User not found during /status check for email: {}", email, e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        } catch (Exception e) {
+            logger.error("Unexpected error during /status check for email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while checking authentication status");
         }
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserLoginDto request) {
@@ -57,15 +70,19 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (UserNotFoundException e) {
             logger.warn("Login failed: User not found for email: {}", request.getEmail());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("message", "User not found"));
         } catch (IllegalArgumentException e) {
             logger.warn("Login failed: Invalid credentials for email: {}", request.getEmail());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Collections.singletonMap("message", "Invalid credentials"));
         } catch (RuntimeException e) {
             logger.error("An unexpected error occurred during login for email: {}", request.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred during login");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("message", "An error occurred during login"));
         }
     }
+
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody UserCreateDto userCreateDto) {
