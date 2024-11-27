@@ -133,7 +133,7 @@ public class UserService {
         }
         String token = jwtService.generateToken(email, jwtSecret);
 
-        UserDto userDto = userMapper.toUserDto(user);
+        UserResponseDto userDto = userMapper.toUserResponseDto(user);
 
         return new LoginResponse(token, userDto);
     }
