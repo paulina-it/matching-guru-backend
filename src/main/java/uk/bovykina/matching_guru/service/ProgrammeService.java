@@ -1,5 +1,6 @@
 package uk.bovykina.matching_guru.service;
 
+import aj.org.objectweb.asm.commons.Remapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +65,15 @@ public class ProgrammeService {
                 .collect(Collectors.toList());
     }
 
+
+    public ProgrammeDto getProgrammeById(Long id) {
+        Programme programme = programmeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Programme not found"));
+
+        return toProgrammeDto(programme);
+    }
+
+
     private ProgrammeDto toProgrammeDto(Programme programme) {
         ProgrammeDto dto = new ProgrammeDto();
         dto.setId(programme.getId());
@@ -72,4 +82,5 @@ public class ProgrammeService {
         dto.setOrganisationId(programme.getOrganisation().getId());
         return dto;
     }
+
 }
