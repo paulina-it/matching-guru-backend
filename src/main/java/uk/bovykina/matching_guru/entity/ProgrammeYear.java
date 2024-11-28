@@ -7,6 +7,8 @@ import lombok.Setter;
 import lombok.ToString;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -28,11 +30,14 @@ public class ProgrammeYear extends BaseEntity {
     private Boolean isActive;
     private String joinCode;
 
-    @Column(columnDefinition = "json")
-    private String customSettings;
+//    @Column(columnDefinition = "json")
+//    private String customSettings;
 
     @Enumerated(EnumType.STRING)
     private AlgorithmType preferredAlgorithm;
+
+    @OneToMany(mappedBy = "programmeYear", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProgrammeMatchingCriteria> matchingCriteria;
 
     @Override
     public boolean equals(Object o) {

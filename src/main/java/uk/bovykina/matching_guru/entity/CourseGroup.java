@@ -6,12 +6,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "courseGroupes")
+@Table(name = "course_groups")
 public class CourseGroup {
 
     @Id
@@ -24,4 +27,7 @@ public class CourseGroup {
     @JoinColumn(name = "organisationId", nullable = false)
     @ToString.Exclude
     private Organisation organisation;
+
+    @ManyToMany(mappedBy = "eligibleCourseGroups")
+    private Set<Programme> programmes = new HashSet<>();
 }

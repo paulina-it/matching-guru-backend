@@ -1,17 +1,23 @@
 package uk.bovykina.matching_guru.dto.programme;
 
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 
-@Data
+import java.util.List;
+
+@Getter
+@Setter
 public class ProgrammeYearResponseDto {
     private Long id;
     private Long programmeId;
     private String programmeName;
     private String academicYear;
-    private boolean isActive;
+    private Boolean isActive;
     private String joinCode;
     private String customSettings;
     private AlgorithmType preferredAlgorithm;
+    private List<MatchingCriteriaDto> matchingCriteria;
+
 }

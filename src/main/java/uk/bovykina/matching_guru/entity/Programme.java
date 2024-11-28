@@ -6,6 +6,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,6 +29,15 @@ public class Programme extends BaseEntity {
     @JoinColumn(name = "organisationId", nullable = false)
     @ToString.Exclude
     private Organisation organisation;
+
+    @ManyToMany
+    @JoinTable(
+            name = "programme_course_groups",
+            joinColumns = @JoinColumn(name = "programmeId"),
+            inverseJoinColumns = @JoinColumn(name = "courseGroupId")
+    )
+    private Set<CourseGroup> eligibleCourseGroups = new HashSet<>();
+
 
     @Override
     public boolean equals(Object o) {
