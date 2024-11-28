@@ -71,15 +71,15 @@ public class AuthController {
         } catch (UserNotFoundException e) {
             logger.warn("Login failed: User not found for email: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Collections.singletonMap("message", "User not found"));
+                    .body("User not found");
         } catch (IllegalArgumentException e) {
             logger.warn("Login failed: Invalid credentials for email: {}", request.getEmail());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Collections.singletonMap("message", "Invalid credentials"));
+                    .body("Invalid credentials");
         } catch (RuntimeException e) {
             logger.error("An unexpected error occurred during login for email: {}", request.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "An error occurred during login"));
+                    .body("An error occurred during login");
         }
     }
 
@@ -125,7 +125,7 @@ public class AuthController {
 
             // Check if the admin has an associated organisation
             if (userDto.getOrganisationId() == null) {
-                return ResponseEntity.ok(Collections.singletonMap("message", "Admin has no organisation"));
+                return ResponseEntity.ok("Admin has no organisation");
             }
 
             Optional<OrganisationDto> organisation = organisationService.getOrganisationById(userDto.getOrganisationId());

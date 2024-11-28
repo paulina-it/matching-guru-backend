@@ -146,7 +146,7 @@ public class UserService {
 
     public UserResponseDto getUserByEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + email));
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
         return userMapper.toUserResponseDto(user);
     }
 
