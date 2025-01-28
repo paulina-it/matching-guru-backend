@@ -18,6 +18,7 @@ import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.service.ProgrammeService;
 import uk.bovykina.matching_guru.service.UserService;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -98,6 +99,30 @@ public class ProgrammeController {
         } catch (IllegalArgumentException e) {
             log.error("Invalid organisation id: {}", organisationId, e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+    @GetMapping("/organisation/{organisationId}/active")
+    public ResponseEntity<List<ProgrammeDto>> getActiveProgrammesByOrganisation(@PathVariable Long organisationId) {
+        try {
+            List<ProgrammeDto> programmes = programmeService.getActiveProgrammesByOrganisation(organisationId);
+            return ResponseEntity.ok(programmes);
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid organisation id: {}", organisationId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<ProgrammeDto>> getProgrammesByUserId(@PathVariable Long userId) {
+        try {
+            List<ProgrammeDto> programmes = programmeService.getProgrammesByUserId(userId);
+            return ResponseEntity.ok(programmes);
+        } catch (IllegalArgumentException e) {
+            log.error("User not found: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        } catch (Exception e) {
+            log.error("Error fetching programmes for user: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
         }
     }
 

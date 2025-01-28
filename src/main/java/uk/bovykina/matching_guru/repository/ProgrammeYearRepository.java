@@ -4,11 +4,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProgrammeYearRepository extends JpaRepository<ProgrammeYear, Long> {
     Optional<ProgrammeYear> findProgrammeYearByAcademicYear(String academicYear);
     Optional<ProgrammeYear> findProgrammeYearById(Long id);
-    Optional<ProgrammeYear> findProgrammeYearByProgrammeId(Long programmeId);
+    List<ProgrammeYear> findProgrammeYearByProgrammeId(Long programmeId);
 
 }

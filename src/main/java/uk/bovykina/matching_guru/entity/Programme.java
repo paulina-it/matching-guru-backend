@@ -38,6 +38,8 @@ public class Programme extends BaseEntity {
     )
     private Set<CourseGroup> eligibleCourseGroups = new HashSet<>();
 
+    @OneToMany(mappedBy = "programme", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProgrammeYear> programmeYears;
 
     @Override
     public boolean equals(Object o) {

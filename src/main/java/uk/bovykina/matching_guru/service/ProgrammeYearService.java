@@ -67,6 +67,26 @@ public class ProgrammeYearService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<ProgrammeYearResponseDto> getAllProgrammeYearsByProgrammeId(Long programmeId) {
+        return programmeYearRepository.findProgrammeYearByProgrammeId(programmeId).stream()
+                .map(this::toProgrammeYearResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MatchingCriteriaDto> getMatchingCriteriaByProgrammeYear(Long programmeYearId) {
+        // Fetch ProgrammeYear
+        ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
+                .orElseThrow(() -> new IllegalArgumentException("ProgrammeYear not found with ID: " + programmeYearId));
+
+        // Retrieve and convert matching criteria
+        return matchingCriteriaRepository.findByProgrammeYearId(programmeYearId).stream()
+                .map(this::toMatchingCriteriaDto)
+                .collect(Collectors.toList());
+    }
+
+
     @Transactional
     public ProgrammeYearResponseDto updateProgrammeYear(Long id, ProgrammeYearUpdateDto updateDto) {
         ProgrammeYear programmeYear = programmeYearRepository.findById(id)
@@ -83,7 +103,6 @@ public class ProgrammeYearService {
 //        }
         programmeYear.setIsActive(updateDto.isActive());
 
-        // Update matching criteria if provided
         if (updateDto.getMatchingCriteria() != null) {
             saveMatchingCriteria(programmeYear, updateDto.getMatchingCriteria());
         }
@@ -102,10 +121,8 @@ public class ProgrammeYearService {
             throw new IllegalArgumentException("The total weight of all criteria must equal 100%");
         }
 
-        // Clear existing criteria for this programme year
         matchingCriteriaRepository.deleteByProgrammeYearId(programmeYear.getId());
 
-        // Save new criteria
         List<ProgrammeMatchingCriteria> criteria = criteriaDtos.stream()
                 .map(dto -> {
                     ProgrammeMatchingCriteria criterion = new ProgrammeMatchingCriteria();
@@ -140,7 +157,7 @@ public class ProgrammeYearService {
     }
 
     private String generateJoinCode() {
-        return UUID.randomUUID().toString().substring(0, 8); // Generates a unique 8-character join code
+        return UUID.randomUUID().toString().substring(0, 8);
     }
 
     @Transactional

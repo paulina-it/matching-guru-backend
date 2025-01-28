@@ -13,6 +13,7 @@ import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeRepository;
+import uk.bovykina.matching_guru.repository.UserRepository;
 
 import java.util.List;
 import java.util.Set;
@@ -27,18 +28,16 @@ public class ProgrammeService {
     private final OrganisationRepository organisationRepository;
     private final CourseGroupRepository courseGroupRepository;
     private final ParticipantRepository participantRepository;
+    private final UserRepository userRepository;
 
     public ProgrammeDto createProgramme(ProgrammeCreateDto programmeCreateDto) {
-        // Fetch organisation by ID
         Organisation organisation = organisationRepository.findById(programmeCreateDto.getOrganisationId())
                 .orElseThrow(() -> new IllegalArgumentException("Organisation not found with ID: " + programmeCreateDto.getOrganisationId()));
 
-        // Fetch course groups by IDs
         Set<CourseGroup> courseGroups = courseGroupRepository.findAllById(programmeCreateDto.getCourseGroupIds())
                 .stream()
                 .collect(Collectors.toSet());
 
-        // Create a new programme
         Programme programme = new Programme();
         programme.setName(programmeCreateDto.getName());
         programme.setDescription(programmeCreateDto.getDescription());
@@ -47,7 +46,6 @@ public class ProgrammeService {
 
         Programme savedProgramme = programmeRepository.save(programme);
 
-        // Convert entity to DTO
         return toProgrammeDto(savedProgramme);
     }
 
@@ -82,11 +80,29 @@ public class ProgrammeService {
                 .collect(Collectors.toList());
     }
 
+    public List<ProgrammeDto> getActiveProgrammesByOrganisation(Long organisationId) {
+        return programmeRepository.findActiveProgrammesByOrganisationId(organisationId)
+                .stream()
+                .map(this::toProgrammeDto)
+                .collect(Collectors.toList());
+    }
+
     public ProgrammeDto getProgrammeById(Long id) {
         Programme programme = programmeRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Programme not found with ID: " + id));
 
         return toProgrammeDto(programme);
+    }
+
+    public List<ProgrammeDto> getProgrammesByUserId(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        List<Programme> programmes = programmeRepository.findProgrammesByUserId(userId);
+
+        return programmes.stream()
+                .map(this::toProgrammeDto)
+                .collect(Collectors.toList());
     }
 
     private ProgrammeDto toProgrammeDto(Programme programme) {
@@ -106,4 +122,5 @@ public class ProgrammeService {
 
         return dto;
     }
+
 }

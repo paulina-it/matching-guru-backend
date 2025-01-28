@@ -37,6 +37,10 @@ public class User extends BaseEntity {
     @ToString.Exclude
     private UserDemographics userDemographics;
 
+    @ManyToOne
+    @JoinColumn(name = "courseId")
+    private Course course;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

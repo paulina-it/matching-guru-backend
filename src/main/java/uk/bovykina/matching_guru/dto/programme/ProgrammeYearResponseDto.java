@@ -16,7 +16,7 @@ public class ProgrammeYearResponseDto {
     private String academicYear;
     private Boolean isActive;
     private String joinCode;
-    private String customSettings;
+//    private String customSettings;
     private AlgorithmType preferredAlgorithm;
     private List<MatchingCriteriaDto> matchingCriteria;
 

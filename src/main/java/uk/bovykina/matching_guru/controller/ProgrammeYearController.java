@@ -9,7 +9,7 @@ import uk.bovykina.matching_guru.service.ProgrammeYearService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/programme-years")
+@RequestMapping("/programme-years")
 @RequiredArgsConstructor
 public class ProgrammeYearController {
 
@@ -41,6 +41,26 @@ public class ProgrammeYearController {
     public ResponseEntity<List<ProgrammeYearResponseDto>> getAllProgrammeYears() {
         List<ProgrammeYearResponseDto> response = programmeYearService.getAllProgrammeYears();
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Retrieve all ProgrammeYears by Programme ID.
+     */
+    @GetMapping("/programme/{programmeId}")
+    public ResponseEntity<List<ProgrammeYearResponseDto>> getAllProgrammeYearsByProgrammeId(
+            @PathVariable Long programmeId) {
+        List<ProgrammeYearResponseDto> response = programmeYearService.getAllProgrammeYearsByProgrammeId(programmeId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{programmeYearId}/matching-criteria")
+    public ResponseEntity<?> getMatchingCriteria(@PathVariable Long programmeYearId) {
+        try {
+            List<MatchingCriteriaDto> criteria = programmeYearService.getMatchingCriteriaByProgrammeYear(programmeYearId);
+            return ResponseEntity.ok(criteria);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 
     /**

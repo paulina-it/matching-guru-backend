@@ -21,10 +21,6 @@ public class ProgrammeYear extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "programmeId", nullable = false)
-    @ToString.Exclude
-    private Programme programme;
 
     private String academicYear;
     private Boolean isActive;
@@ -32,6 +28,11 @@ public class ProgrammeYear extends BaseEntity {
 
 //    @Column(columnDefinition = "json")
 //    private String customSettings;
+
+
+    @ManyToOne
+    @JoinColumn(name = "programme_id")
+    private Programme programme;
 
     @Enumerated(EnumType.STRING)
     private AlgorithmType preferredAlgorithm;

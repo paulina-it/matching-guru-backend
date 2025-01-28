@@ -25,6 +25,12 @@ public class CourseController {
         return ResponseEntity.ok(courseService.getCoursesByGroupId(groupId));
     }
 
+
+    @GetMapping("/programme/{programmeId}/eligible")
+    public ResponseEntity<List<CourseDto>> getEligibleCoursesByProgrammeId(@PathVariable Long programmeId) {
+        return ResponseEntity.ok(courseService.getEligibleCoursesByProgrammeId(programmeId));
+    }
+
     @DeleteMapping("/{courseId}")
     public ResponseEntity<Void> deleteCourse(@PathVariable Long courseId) {
         courseService.deleteCourse(courseId);
