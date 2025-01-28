@@ -5,8 +5,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import uk.bovykina.matching_guru.entity.enums.Availability;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.entity.enums.AcademicStage;
+import uk.bovykina.matching_guru.entity.enums.TimeRange;
+
+import java.time.DayOfWeek;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -42,11 +48,19 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     private String motivation;
     private Boolean isReturningParticipant;
 
+    @ElementCollection
+    @CollectionTable(name = "participant_availability_days", joinColumns = @JoinColumn(name = "participantId"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dayOfWeek")
+    private Set<DayOfWeek> availableDays = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    private TimeRange timeRange;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ParticipantInProgrammeYear)) return false;
-        ParticipantInProgrammeYear that = (ParticipantInProgrammeYear) o;
+        if (!(o instanceof ParticipantInProgrammeYear that)) return false;
         return id != null && id.equals(that.getId());
     }
 

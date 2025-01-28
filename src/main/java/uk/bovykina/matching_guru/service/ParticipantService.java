@@ -53,6 +53,12 @@ public class ParticipantService {
         return toParticipantResponseDto(participant);
     }
 
+    public ParticipantResponseDto getParticipantByUserId(Long id) {
+        ParticipantInProgrammeYear participant = participantRepository.findByUserId(id)
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
+        return toParticipantResponseDto(participant);
+    }
+
     public List<ParticipantResponseDto> getAllParticipants() {
         return participantRepository.findAll().stream()
                 .map(this::toParticipantResponseDto)
@@ -97,19 +103,16 @@ public class ParticipantService {
         ParticipantResponseDto dto = new ParticipantResponseDto();
         dto.setId(participant.getId());
 
-        // User details
         User user = participant.getUser();
         dto.setUserId(user.getId());
         dto.setUserName(user.getFirstName() + " " + user.getLastName());
         dto.setUserEmail(user.getEmail());
 
-        // ProgrammeYear and Programme details
         ProgrammeYear programmeYear = participant.getProgrammeYear();
         dto.setProgrammeYearId(programmeYear.getId());
         dto.setProgrammeName(programmeYear.getProgramme().getName());
         dto.setAcademicYear(programmeYear.getAcademicYear());
 
-        // Participant details
         dto.setRole(participant.getRole());
         dto.setMenteesNumber(participant.getMenteesNumber());
         dto.setIsMatched(participant.getIsMatched());
