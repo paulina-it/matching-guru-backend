@@ -8,6 +8,7 @@ import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.CriterionType;
+import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeYearRepository;
@@ -23,6 +24,7 @@ public class ProgrammeYearService {
     private final ProgrammeYearRepository programmeYearRepository;
     private final ProgrammeRepository programmeRepository;
     private final ProgrammeMatchingCriteriaRepository matchingCriteriaRepository;
+    private final ParticipantRepository participantRepository;
 
     @Transactional
     public ProgrammeYearResponseDto createProgrammeYear(ProgrammeYearCreateDto createDto) {
@@ -146,6 +148,10 @@ public class ProgrammeYearService {
         dto.setJoinCode(programmeYear.getJoinCode());
 //        dto.setCustomSettings(programmeYear.getCustomSettings());
         dto.setPreferredAlgorithm(programmeYear.getPreferredAlgorithm());
+
+        int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
+        dto.setParticipantCount(participantCount);
+
         return dto;
     }
 

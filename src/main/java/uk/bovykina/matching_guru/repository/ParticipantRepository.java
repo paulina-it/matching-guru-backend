@@ -16,6 +16,9 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
 
     List<ParticipantInProgrammeYear> findByRole(ParticipantRole role);
 
+    @Query("SELECT COUNT(p) FROM ParticipantInProgrammeYear p WHERE p.programmeYear.id = :programmeYearId")
+    int countByProgrammeYearId(Long programmeYearId);
+
     @Query("SELECT p FROM ParticipantInProgrammeYear p WHERE p.programmeYear.id = :programmeYearId AND p.role = :role")
     List<ParticipantInProgrammeYear> findByProgrammeYearIdAndRole(@Param("programmeYearId") Long programmeYearId, @Param("role") ParticipantRole role);
 

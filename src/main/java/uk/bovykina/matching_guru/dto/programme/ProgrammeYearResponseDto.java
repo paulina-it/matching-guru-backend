@@ -19,5 +19,6 @@ public class ProgrammeYearResponseDto {
 //    private String customSettings;
     private AlgorithmType preferredAlgorithm;
     private List<MatchingCriteriaDto> matchingCriteria;
+    private Integer participantCount;
 
 }
