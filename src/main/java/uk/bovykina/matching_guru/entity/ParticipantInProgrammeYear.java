@@ -10,6 +10,7 @@ import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.entity.enums.AcademicStage;
 import uk.bovykina.matching_guru.entity.enums.TimeRange;
 
+import javax.net.ssl.SSLSession;
 import java.time.DayOfWeek;
 import java.util.HashSet;
 import java.util.Set;
@@ -67,6 +68,14 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public Course getCourse() {
+        return user.getCourse();
+    }
+
+    public CourseGroup getCourseGroup() {
+        return user.getCourse().getGroup();
     }
 }
 

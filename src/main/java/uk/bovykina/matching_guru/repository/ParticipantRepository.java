@@ -16,7 +16,20 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
 
     List<ParticipantInProgrammeYear> findByRole(ParticipantRole role);
 
+    @Query("SELECT p FROM ParticipantInProgrammeYear p WHERE p.programmeYear.id = :programmeYearId AND p.role = :role")
+    List<ParticipantInProgrammeYear> findByProgrammeYearIdAndRole(@Param("programmeYearId") Long programmeYearId, @Param("role") ParticipantRole role);
+
+    default List<ParticipantInProgrammeYear> debugFindByProgrammeYearIdAndRole(Long programmeYearId, ParticipantRole role) {
+        List<ParticipantInProgrammeYear> participants = findByProgrammeYearIdAndRole(programmeYearId, role);
+        System.out.println("🔍 Найдено " + participants.size() + " участников с ролью " + role + " в ProgrammeYear ID: " + programmeYearId);
+        participants.forEach(p -> System.out.println("  - ID: " + p.getId() + ", UserID: " + (p.getUser() != null ? p.getUser().getId() : "NULL")));
+        return participants;
+    }
+
+
     @Query("SELECT COUNT(p) FROM ParticipantInProgrammeYear p " +
             "WHERE p.programmeYear.programme.id = :programmeId")
     Integer countParticipantsByProgrammeId(@Param("programmeId") Long programmeId);
+
+    ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole participantRole, boolean b);
 }
