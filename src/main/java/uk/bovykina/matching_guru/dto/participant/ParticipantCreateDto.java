@@ -2,11 +2,12 @@ package uk.bovykina.matching_guru.dto.participant;
 
 import lombok.Getter;
 import lombok.Setter;
-import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
-import uk.bovykina.matching_guru.entity.enums.AcademicStage;
+import uk.bovykina.matching_guru.entity.enums.*;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.DayOfWeek;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -21,7 +22,6 @@ public class ParticipantCreateDto {
     private ParticipantRole role;
 
     private Integer menteesNumber;
-
     private Boolean isMatched;
 
     @NotNull(message = "Academic Stage cannot be null")
@@ -33,6 +33,14 @@ public class ParticipantCreateDto {
     private String placementDescription;
 
     private String motivation;
-
     private Boolean isReturningParticipant;
+
+    @NotNull(message = "Available days cannot be null")
+    private Set<DayOfWeek> availableDays;
+
+    @NotNull(message = "Time range cannot be null")
+    private TimeRange timeRange;
+
+    @NotNull(message = "Skills cannot be null")
+    private Set<Skill> skills;
 }
