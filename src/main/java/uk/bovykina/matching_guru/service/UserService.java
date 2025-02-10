@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import uk.bovykina.matching_guru.dto.participant.ParticipantDto;
 import uk.bovykina.matching_guru.dto.user.*;
 import uk.bovykina.matching_guru.entity.Auth;
 import uk.bovykina.matching_guru.entity.Organisation;
@@ -39,15 +40,14 @@ public class UserService {
     public boolean isJoinCodeValid(String joinCode) {
         return organisationRepository.existsByJoinCode(joinCode);
     }
+
     public UserDto createUser(UserCreateDto userCreateDto) {
         if (userRepository.findByEmail(userCreateDto.getEmail()).isPresent()) {
             throw new IllegalArgumentException("User with this email already exists.");
         }
 
-        if (userCreateDto.getRole() == UserRole.ADMIN) {
-            if (userCreateDto.getUniEmail() == null) {
-                userCreateDto.setUniEmail(userCreateDto.getEmail());
-            }
+        if (userCreateDto.getRole() == UserRole.ADMIN && userCreateDto.getUniEmail() == null) {
+            userCreateDto.setUniEmail(userCreateDto.getEmail());
         }
 
         User user = userMapper.toUser(userCreateDto);
@@ -61,13 +61,13 @@ public class UserService {
         User savedUser = userRepository.save(user);
         System.out.println("User saved: " + savedUser);
 
+        // Create Auth record
         Auth auth = new Auth();
         auth.setUser(savedUser);
         auth.setPasswordHash(passwordEncoder.encode(userCreateDto.getPassword()));
         auth.setLastLogin(LocalDateTime.now());
         authRepository.save(auth);
         System.out.println("Auth details saved for user: " + savedUser.getEmail());
-
 
         return userMapper.toUserDto(savedUser);
     }
@@ -76,32 +76,21 @@ public class UserService {
         User user = userRepository.findById(updateDto.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + updateDto.getId()));
 
-        if (updateDto.getFirstName() != null) {
-            user.setFirstName(updateDto.getFirstName());
-        }
-        if (updateDto.getLastName() != null) {
-            user.setLastName(updateDto.getLastName());
-        }
-        if (updateDto.getEmail() != null) {
-            user.setEmail(updateDto.getEmail());
-        }
-        if (updateDto.getUniEmail() != null) {
-            user.setUniEmail(updateDto.getUniEmail());
-        }
-        if (updateDto.getStudentNumber() != null) {
-            user.setStudentNumber(updateDto.getStudentNumber());
-        }
-        if (updateDto.getRole() != null) {
-            user.setRole(updateDto.getRole());
-        }
-        if (updateDto.getOrganisationId() != null) {
-            Organisation organisation = organisationRepository.findById(updateDto.getOrganisationId())
-                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found with ID: " + updateDto.getOrganisationId()));
-            user.setOrganisation(organisation);
-        }
+        if (updateDto.getFirstName() != null) user.setFirstName(updateDto.getFirstName());
+        if (updateDto.getLastName() != null) user.setLastName(updateDto.getLastName());
+        if (updateDto.getEmail() != null) user.setEmail(updateDto.getEmail());
+        if (updateDto.getUniEmail() != null) user.setUniEmail(updateDto.getUniEmail());
+        if (updateDto.getStudentNumber() != null) user.setStudentNumber(updateDto.getStudentNumber());
+        if (updateDto.getRole() != null) user.setRole(updateDto.getRole());
+        if (updateDto.getPersonalityType() != null) user.setPersonalityType(updateDto.getPersonalityType());
+        if (updateDto.getGender() != null) user.setGender(updateDto.getGender());
+        if (updateDto.getEthnicity() != null) user.setEthnicity(updateDto.getEthnicity());
+        if (updateDto.getNationality() != null) user.setNationality(updateDto.getNationality());
+        if (updateDto.getHomeCountry() != null) user.setHomeCountry(updateDto.getHomeCountry());
+        if (updateDto.getLivingArrangement() != null) user.setLivingArrangement(updateDto.getLivingArrangement());
+        if (updateDto.getDisability() != null) user.setDisability(updateDto.getDisability());
 
         User savedUser = userRepository.save(user);
-
         return userMapper.toUserDto(savedUser);
     }
 
@@ -115,7 +104,7 @@ public class UserService {
 
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException("User not found with ID: " + id); // Consider using a custom exception
+            throw new UserNotFoundException("User not found with ID: " + id);
         }
         userRepository.deleteById(id);
     }
@@ -157,6 +146,7 @@ public class UserService {
     }
 
     private static class UserMapper {
+
         User toUser(UserCreateDto userCreateDto) {
             User user = new User();
             user.setFirstName(userCreateDto.getFirstName());
@@ -165,6 +155,13 @@ public class UserService {
             user.setUniEmail(userCreateDto.getUniEmail());
             user.setStudentNumber(userCreateDto.getStudentNumber());
             user.setRole(userCreateDto.getRole());
+            user.setPersonalityType(userCreateDto.getPersonalityType());
+            user.setGender(userCreateDto.getGender());
+            user.setEthnicity(userCreateDto.getEthnicity());
+            user.setNationality(userCreateDto.getNationality());
+            user.setHomeCountry(userCreateDto.getHomeCountry());
+            user.setLivingArrangement(userCreateDto.getLivingArrangement());
+            user.setDisability(userCreateDto.getDisability());
             return user;
         }
 
@@ -177,10 +174,15 @@ public class UserService {
             userDto.setUniEmail(user.getUniEmail());
             userDto.setStudentNumber(user.getStudentNumber());
             userDto.setRole(user.getRole());
-
+            userDto.setPersonalityType(user.getPersonalityType());
+            userDto.setGender(user.getGender());
+            userDto.setEthnicity(user.getEthnicity());
+            userDto.setNationality(user.getNationality());
+            userDto.setHomeCountry(user.getHomeCountry());
+            userDto.setLivingArrangement(user.getLivingArrangement());
+            userDto.setDisability(user.getDisability());
             return userDto;
         }
-
 
         UserResponseDto toUserResponseDto(User user) {
             UserResponseDto userDto = new UserResponseDto();
@@ -191,13 +193,28 @@ public class UserService {
             userDto.setUniEmail(user.getUniEmail());
             userDto.setStudentNumber(user.getStudentNumber());
             userDto.setRole(user.getRole());
-//            userDto.setOrganisationId(user.getOrganisation().getId());
-//            userDto.setOrganisationName(user.getOrganisation().getName());
+            userDto.setPersonalityType(user.getPersonalityType());
+            userDto.setGender(user.getGender());
+            userDto.setEthnicity(user.getEthnicity());
+            userDto.setNationality(user.getNationality());
+            userDto.setHomeCountry(user.getHomeCountry());
+            userDto.setLivingArrangement(user.getLivingArrangement());
+            userDto.setDisability(user.getDisability());
 
             if (user.getOrganisation() != null) {
                 userDto.setOrganisationId(user.getOrganisation().getId());
                 userDto.setOrganisationName(user.getOrganisation().getName());
             }
+
+            userDto.setParticipations(
+                    user.getParticipations().stream()
+                            .map(part -> new UserParticipationDto(
+                                    part.getProgrammeYear().getAcademicYear(),
+                                    part.getRole()
+                            ))
+                            .collect(Collectors.toList())
+            );
+
             return userDto;
         }
     }

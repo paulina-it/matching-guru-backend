@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import uk.bovykina.matching_guru.entity.enums.UserRole;
+import uk.bovykina.matching_guru.entity.enums.*;
 
 @Getter
 public class UserCreateDto {
@@ -30,6 +30,25 @@ public class UserCreateDto {
     private UserRole role;
 
     private String joinCode;
+
     @NotNull
     private String password;
+
+    @NotNull
+    private PersonalityType personalityType;
+
+    @NotNull
+    private Gender gender;
+
+    @NotNull
+    private Integer age;
+
+    private String ethnicity;
+    private String nationality;
+    private String homeCountry;
+
+    @NotNull
+    private LivingArrangement livingArrangement;
+
+    private String disability;
 }

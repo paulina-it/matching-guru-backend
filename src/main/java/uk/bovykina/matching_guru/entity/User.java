@@ -5,7 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import uk.bovykina.matching_guru.entity.enums.UserRole;
+import uk.bovykina.matching_guru.entity.enums.*;
+
+import java.util.Set;
 
 @Getter
 @Setter
@@ -29,17 +31,38 @@ public class User extends BaseEntity {
     private UserRole role;
 
     @ManyToOne
-    @JoinColumn(name = "organisationId", nullable = true)
+    @JoinColumn(name = "organisation_id")
     @ToString.Exclude
     private Organisation organisation;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private UserDemographics userDemographics;
 
     @ManyToOne
-    @JoinColumn(name = "courseId")
+    @JoinColumn(name = "course_id")
     private Course course;
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    @Enumerated(EnumType.STRING)
+    private PersonalityType personalityType;
+
+    private String ethnicity;
+    private String nationality;
+    private String homeCountry;
+
+    @Enumerated(EnumType.STRING)
+    private LivingArrangement livingArrangement;
+
+    private String disability;
+    private String dbsCertificate;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private Set<ParticipantInProgrammeYear> participations;
+
 
     @Override
     public boolean equals(Object o) {
