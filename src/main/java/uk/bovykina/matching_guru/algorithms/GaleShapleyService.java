@@ -25,6 +25,85 @@ public class GaleShapleyService {
     private final ProgrammeMatchingCriteriaRepository criteriaRepository;
     private final MatchService matchService;
 
+    private Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> galeShapley(
+            List<ParticipantInProgrammeYear> mentors,
+            List<ParticipantInProgrammeYear> mentees,
+            Map<String, Integer> weights
+    ) {
+        Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
+        Map<ParticipantInProgrammeYear, Queue<ParticipantInProgrammeYear>> mentorPreferences = new HashMap<>();
+
+        // Предварительно вычисляем и фильтруем предпочтения для каждого ментора
+        for (ParticipantInProgrammeYear mentor : mentors) {
+            List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream()
+                    .filter(mentee -> isCompatible(mentor, mentee))
+                    .sorted(Comparator.comparingDouble(mentee -> -calculateScore(mentor, mentee, weights)))
+                    .toList();
+
+            if (!compatibleMentees.isEmpty()) {
+                mentorPreferences.put(mentor, new LinkedList<>(compatibleMentees));
+            }
+        }
+
+        Queue<ParticipantInProgrammeYear> freeMentors = new LinkedList<>(mentorPreferences.keySet());
+        log.info("🔄 Запуск алгоритма Gale-Shapley с {} активных менторов", freeMentors.size());
+
+        while (!freeMentors.isEmpty()) {
+            ParticipantInProgrammeYear mentor = freeMentors.poll();
+            Queue<ParticipantInProgrammeYear> preferences = mentorPreferences.get(mentor);
+
+            if (preferences.isEmpty()) {
+                log.info("ℹ Ментор {} не имеет подходящих менти", mentor.getId());
+                continue;
+            }
+
+            ParticipantInProgrammeYear mentee = preferences.poll();
+
+            if (!matches.containsValue(mentee)) {
+                matches.put(mentor, mentee);
+                log.info("🔗 Создана пара: {} (ментор) → {} (менти)", mentor.getId(), mentee.getId());
+            } else {
+                // Если менти уже в паре, проверяем, предпочтет ли он нового ментора
+                ParticipantInProgrammeYear currentMentor = matches.entrySet().stream()
+                        .filter(entry -> entry.getValue().equals(mentee))
+                        .map(Map.Entry::getKey)
+                        .findFirst()
+                        .orElseThrow();
+
+                if (calculateScore(mentor, mentee, weights) > calculateScore(currentMentor, mentee, weights)) {
+                    matches.remove(currentMentor);
+                    matches.put(mentor, mentee);
+                    freeMentors.add(currentMentor);
+                    log.info("🔄 Пара переназначена: {} (новый ментор) → {} (менти)", mentor.getId(), mentee.getId());
+                } else if (!preferences.isEmpty()) {
+                    freeMentors.add(mentor);
+                }
+            }
+        }
+
+        return matches;
+    }
+
+    private boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
+        // Проверка академических стадий
+        if (!isValidMentorship(mentor.getAcademicStage(), mentee.getAcademicStage())) {
+            log.debug("❌ Несовместимые академические стадии: {} (ментор) и {} (менти)",
+                    mentor.getId(), mentee.getId());
+            return false;
+        }
+
+        // Проверка курса или группы
+        boolean sameCourse = mentor.getCourse().getId().equals(mentee.getCourse().getId());
+        boolean sameGroup = mentor.getCourseGroup().equals(mentee.getCourseGroup());
+
+        if (!sameCourse && !sameGroup) {
+            log.debug("❌ Разные курсы и группы: {} (ментор) и {} (менти)",
+                    mentor.getId(), mentee.getId());
+            return false;
+        }
+
+        return true;
+    }
     @Transactional
     public void matchParticipants(Long programmeYearId, boolean isInitialMatching) {
         log.info("▶ Начало процесса матчинга для ProgrammeYear ID: {} | Первичный: {}", programmeYearId, isInitialMatching);
@@ -43,28 +122,23 @@ public class GaleShapleyService {
                     .stream().filter(m -> !m.getIsMatched()).toList();
         }
 
-        log.info("👥 Найдено {} менторов и {} менторов", mentors.size(), mentees.size());
+        log.info("👥 Найдено {} менторов и {} менти", mentors.size(), mentees.size());
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
             log.warn("⚠ Недостаточно участников для матчинга");
             return;
         }
 
-        // Загружаем веса критериев
         Map<String, Integer> weights = loadMatchingCriteria(programmeYearId);
         log.info("📊 Загружены веса критериев: {}", weights);
 
-        // Запуск алгоритма Gale-Shapley
         Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = galeShapley(mentors, mentees, weights);
 
-        // Сохранение результатов через MatchService
-        for (Map.Entry<ParticipantInProgrammeYear, ParticipantInProgrammeYear> entry : matches.entrySet()) {
-            ParticipantInProgrammeYear mentor = entry.getKey();
-            ParticipantInProgrammeYear mentee = entry.getValue();
+        matches.forEach((mentor, mentee) -> {
+            double compatibilityScore = calculateScore(mentor, mentee, weights);
+            log.info("🔗 Создание матча: {} (ментор) → {} (менти) с совместимостью {}", mentor.getId(), mentee.getId(), compatibilityScore);
 
-            log.info("🔗 Предложено соответствие: {} (ментор) → {} (менти)", mentor.getId(), mentee.getId());
-
-            MatchCreateDto matchCreateDto = new MatchCreateDto(mentor.getId(), mentee.getId());
+            MatchCreateDto matchCreateDto = new MatchCreateDto(mentor.getId(), mentee.getId(), compatibilityScore);
             matchService.createMatch(matchCreateDto);
 
             mentor.setIsMatched(true);
@@ -73,72 +147,39 @@ public class GaleShapleyService {
             participantRepository.save(mentor);
             participantRepository.save(mentee);
 
-            log.info("✅ Совпадение сохранено: {} (ментор) → {} (менти)", mentor.getId(), mentee.getId());
-        }
+            log.info("✅ Матч сохранен: {} (ментор) → {} (менти) с совместимостью {}", mentor.getId(), mentee.getId(), compatibilityScore);
+        });
 
         log.info("✔ Матчинг завершён для ProgrammeYear ID: {}", programmeYearId);
     }
 
-    private Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> galeShapley(
-            List<ParticipantInProgrammeYear> mentors,
-            List<ParticipantInProgrammeYear> mentees,
-            Map<String, Integer> weights
-    ) {
-        Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
-        Queue<ParticipantInProgrammeYear> freeMentors = new LinkedList<>(mentors);
-
-        log.info("🔄 Запуск алгоритма Gale-Shapley с {} менторов и {} менти", mentors.size(), mentees.size());
-
-        while (!freeMentors.isEmpty()) {
-            ParticipantInProgrammeYear mentor = freeMentors.poll();
-            List<ParticipantInProgrammeYear> rankedMentees = sortParticipantsByScore(mentor, mentees, weights);
-
-            for (ParticipantInProgrammeYear mentee : rankedMentees) {
-                if (!matches.containsValue(mentee)) {
-                    matches.put(mentor, mentee);
-                    log.info("🔗 Связка предложена: {} (ментор) → {} (менти)", mentor.getId(), mentee.getId());
-                    break;
-                }
-            }
-        }
-
-        return matches;
-    }
-
-    public double calculateScore(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, Map<String, Integer> weights) {
-        double score = 0;
-
+    private double calculateScore(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, Map<String, Integer> weights) {
         if (!isValidMentorship(mentor.getAcademicStage(), mentee.getAcademicStage())) {
-            log.info("❌ Отклонение: {} (ментор) и {} (менти) — неподходящие академические стадии", mentor.getId(), mentee.getId());
-            return -1;
+            return 0;
         }
+
+        double score = 0;
 
         if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) {
             score += weights.getOrDefault("courseMatch", 10);
-            log.info("🎓 Совпадение курса: {} (ментор) и {} (менти)", mentor.getId(), mentee.getId());
         } else if (mentor.getCourseGroup().equals(mentee.getCourseGroup())) {
             score += weights.getOrDefault("groupMatch", 5);
-            log.info("👨‍🎓 Совпадение группы: {} (ментор) и {} (менти)", mentor.getId(), mentee.getId());
         } else {
-            log.info("❌ Отклонение: {} (ментор) и {} (менти) — разные направления", mentor.getId(), mentee.getId());
-            return -1;
+            return 0;
         }
 
         Set<DayOfWeek> commonDays = new HashSet<>(mentor.getAvailableDays());
         commonDays.retainAll(mentee.getAvailableDays());
         if (!commonDays.isEmpty()) {
             score += weights.getOrDefault("availability", 8);
-            log.info("📅 Общие дни доступности: {} (ментор) и {} (менти) → {}", mentor.getId(), mentee.getId(), commonDays);
         }
 
         if (mentor.getTimeRange().equals(mentee.getTimeRange())) {
             score += weights.getOrDefault("timeRange", 5);
-            log.info("🕒 Совпадение временных предпочтений: {} (ментор) и {} (менти)", mentor.getId(), mentee.getId());
         }
 
         return score;
     }
-
     private boolean isValidMentorship(AcademicStage mentorStage, AcademicStage menteeStage) {
         Map<AcademicStage, List<AcademicStage>> validMentorships = Map.of(
                 AcademicStage.FOUNDATION, List.of(AcademicStage.FIRST_YEAR),
@@ -156,15 +197,5 @@ public class GaleShapleyService {
                         c -> c.getCriterionType().name(),
                         ProgrammeMatchingCriteria::getWeight
                 ));
-    }
-
-    public List<ParticipantInProgrammeYear> sortParticipantsByScore(
-            ParticipantInProgrammeYear participant,
-            List<ParticipantInProgrammeYear> others,
-            Map<String, Integer> weights
-    ) {
-        return others.stream()
-                .sorted(Comparator.comparingDouble((ParticipantInProgrammeYear o) -> calculateScore(participant, o, weights)).reversed())
-                .toList();
     }
 }
