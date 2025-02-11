@@ -1,7 +1,6 @@
 package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.participant.*;
@@ -13,7 +12,7 @@ import uk.bovykina.matching_guru.repository.UserRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeYearRepository;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +41,9 @@ public class ParticipantService {
         participant.setPlacementDescription(createDto.getPlacementDescription());
         participant.setMotivation(createDto.getMotivation());
         participant.setIsReturningParticipant(createDto.getIsReturningParticipant());
+        participant.setAvailableDays(createDto.getAvailableDays());
+        participant.setTimeRange(createDto.getTimeRange());
+        participant.setSkills(createDto.getSkills());
 
         ParticipantInProgrammeYear savedParticipant = participantRepository.save(participant);
         return toParticipantResponseDto(savedParticipant);
@@ -70,30 +72,17 @@ public class ParticipantService {
         ParticipantInProgrammeYear participant = participantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
 
-        if (updateDto.getRole() != null) {
-            participant.setRole(updateDto.getRole());
-        }
-        if (updateDto.getMenteesNumber() != null) {
-            participant.setMenteesNumber(updateDto.getMenteesNumber());
-        }
-        if (updateDto.getIsMatched() != null) {
-            participant.setIsMatched(updateDto.getIsMatched());
-        }
-        if (updateDto.getAcademicStage() != null) {
-            participant.setAcademicStage(updateDto.getAcademicStage());
-        }
-        if (updateDto.getHadPlacement() != null) {
-            participant.setHadPlacement(updateDto.getHadPlacement());
-        }
-        if (updateDto.getPlacementDescription() != null) {
-            participant.setPlacementDescription(updateDto.getPlacementDescription());
-        }
-        if (updateDto.getMotivation() != null) {
-            participant.setMotivation(updateDto.getMotivation());
-        }
-        if (updateDto.getIsReturningParticipant() != null) {
-            participant.setIsReturningParticipant(updateDto.getIsReturningParticipant());
-        }
+        if (updateDto.getRole() != null) participant.setRole(updateDto.getRole());
+        if (updateDto.getMenteesNumber() != null) participant.setMenteesNumber(updateDto.getMenteesNumber());
+        if (updateDto.getIsMatched() != null) participant.setIsMatched(updateDto.getIsMatched());
+        if (updateDto.getAcademicStage() != null) participant.setAcademicStage(updateDto.getAcademicStage());
+        if (updateDto.getHadPlacement() != null) participant.setHadPlacement(updateDto.getHadPlacement());
+        if (updateDto.getPlacementDescription() != null) participant.setPlacementDescription(updateDto.getPlacementDescription());
+        if (updateDto.getMotivation() != null) participant.setMotivation(updateDto.getMotivation());
+        if (updateDto.getIsReturningParticipant() != null) participant.setIsReturningParticipant(updateDto.getIsReturningParticipant());
+        if (updateDto.getAvailableDays() != null) participant.setAvailableDays(updateDto.getAvailableDays());
+        if (updateDto.getTimeRange() != null) participant.setTimeRange(updateDto.getTimeRange());
+        if (updateDto.getSkills() != null) participant.setSkills(updateDto.getSkills());
 
         ParticipantInProgrammeYear updatedParticipant = participantRepository.save(participant);
         return toParticipantResponseDto(updatedParticipant);
@@ -107,6 +96,9 @@ public class ParticipantService {
         dto.setUserId(user.getId());
         dto.setUserName(user.getFirstName() + " " + user.getLastName());
         dto.setUserEmail(user.getEmail());
+        dto.setUserGender(user.getGender());
+        dto.setUserNationality(user.getNationality());
+        dto.setUserHomeCountry(user.getHomeCountry());
 
         ProgrammeYear programmeYear = participant.getProgrammeYear();
         dto.setProgrammeYearId(programmeYear.getId());
@@ -121,6 +113,9 @@ public class ParticipantService {
         dto.setPlacementDescription(participant.getPlacementDescription());
         dto.setMotivation(participant.getMotivation());
         dto.setIsReturningParticipant(participant.getIsReturningParticipant());
+        dto.setAvailableDays(participant.getAvailableDays());
+        dto.setTimeRange(participant.getTimeRange());
+        dto.setSkills(participant.getSkills());
 
         return dto;
     }
