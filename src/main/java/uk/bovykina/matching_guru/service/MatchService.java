@@ -33,6 +33,7 @@ public class MatchService {
         match.setMentor(mentor);
         match.setMentee(mentee);
         match.setStatus(MatchStatus.PENDING);
+        match.setCompatibilityScore(matchCreateDto.getCompatibilityScore());
 
         Match savedMatch = matchRepository.save(match);
         return convertToResponseDto(savedMatch);
@@ -112,7 +113,8 @@ public class MatchService {
                                 .map(day -> day.name())
                                 .collect(Collectors.toList()),
                         match.getMentee().getTimeRange().name()
-                )
+                ),
+                match.getCompatibilityScore()
         );
     }
 

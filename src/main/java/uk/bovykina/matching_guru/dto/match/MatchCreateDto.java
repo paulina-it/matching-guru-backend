@@ -8,4 +8,5 @@ import lombok.Data;
 public class MatchCreateDto {
     private Long mentorId;
     private Long menteeId;
+    private double compatibilityScore;
 }

@@ -19,6 +19,7 @@ public class DetailedMatchResponseDto {
 
     private ParticipantDto mentor;
     private ParticipantDto mentee;
+    private double compatibilityScore;
 
     @Data
     @AllArgsConstructor

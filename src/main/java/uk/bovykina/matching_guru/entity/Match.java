@@ -32,6 +32,7 @@ public class Match extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private MatchStatus status;
+    private double compatibilityScore;
 
     @Override
     public boolean equals(Object o) {
