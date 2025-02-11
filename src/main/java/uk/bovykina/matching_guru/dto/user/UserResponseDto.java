@@ -28,4 +28,5 @@ public class UserResponseDto {
     private LivingArrangement livingArrangement;
     private String disability;
     private List<UserParticipationDto> participations;
+    private String profileImageUrl;
 }

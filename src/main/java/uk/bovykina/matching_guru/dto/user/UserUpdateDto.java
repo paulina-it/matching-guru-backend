@@ -27,4 +27,5 @@ public class UserUpdateDto {
     private String homeCountry;
     private LivingArrangement livingArrangement;
     private String disability;
+    private String profileImageUrl;
 }

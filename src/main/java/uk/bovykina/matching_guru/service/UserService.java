@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import uk.bovykina.matching_guru.dto.participant.ParticipantDto;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.user.*;
 import uk.bovykina.matching_guru.entity.Auth;
 import uk.bovykina.matching_guru.entity.Organisation;
@@ -16,11 +16,12 @@ import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.repository.AuthRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.UserRepository;
+import uk.bovykina.matching_guru.util.CloudinaryService;
 import uk.bovykina.matching_guru.util.JwtUtils;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +37,18 @@ public class UserService {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
+    private final CloudinaryService cloudinaryService;
+
+    public String uploadProfileImage(Long userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        String imageUrl = cloudinaryService.uploadImage(file);
+        user.setProfileImageUrl(imageUrl);
+        userRepository.save(user);
+
+        return imageUrl;
+    }
 
     public boolean isJoinCodeValid(String joinCode) {
         return organisationRepository.existsByJoinCode(joinCode);

@@ -22,4 +22,5 @@ public class UserDto {
     private String homeCountry;
     private LivingArrangement livingArrangement;
     private String disability;
+    private String profileImageUrl;
 }

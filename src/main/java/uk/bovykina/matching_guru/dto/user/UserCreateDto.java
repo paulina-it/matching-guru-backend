@@ -51,4 +51,5 @@ public class UserCreateDto {
     private LivingArrangement livingArrangement;
 
     private String disability;
+    private String profileImageUrl;
 }

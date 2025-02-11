@@ -62,6 +62,7 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     private Set<ParticipantInProgrammeYear> participations;
+    private String profileImageUrl;
 
 
     @Override
