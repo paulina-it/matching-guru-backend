@@ -137,16 +137,6 @@ public class CourseService {
         log.info("✅ Course deleted: {}", courseId);
     }
 
-    private CourseDto toCourseDto(Course course) {
-        CourseDto dto = new CourseDto();
-        dto.setId(course.getId());
-        dto.setName(course.getName());
-        dto.setType(course.getType());
-        dto.setDuration(course.getDuration());
-        dto.setGroupId(course.getGroup().getId());
-        return dto;
-    }
-
     public void processFile(MultipartFile file, Long organisationId) throws IOException {
         try {
             if (file.getOriginalFilename().endsWith(".csv")) {
@@ -176,8 +166,6 @@ public class CourseService {
         }
     }
 
-
-    // Process XLSX files
     private void processXLSX(MultipartFile file, Long organisationId) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
@@ -218,4 +206,13 @@ public class CourseService {
         courseRepository.save(course);
     }
 
+    private CourseDto toCourseDto(Course course) {
+        CourseDto dto = new CourseDto();
+        dto.setId(course.getId());
+        dto.setName(course.getName());
+        dto.setType(course.getType());
+        dto.setDuration(course.getDuration());
+        dto.setGroupId(course.getGroup().getId());
+        return dto;
+    }
 }
