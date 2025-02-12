@@ -8,7 +8,9 @@ import uk.bovykina.matching_guru.util.CloudinaryService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 
+@CrossOrigin(origins = "http://localhost:3001", allowCredentials = "true")
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -16,13 +18,16 @@ public class UserController {
     private final UserService userService;
     private final CloudinaryService cloudinaryService;
 
-    @PostMapping("/{userId}/upload-profile-image")
-    public ResponseEntity<String> uploadProfileImage(@PathVariable Long userId, @RequestParam("file") MultipartFile file) {
+    @PostMapping("/upload-profile-image")
+    public ResponseEntity<String> uploadProfileImage(@RequestParam("email") String email,
+                                                     @RequestParam("file") MultipartFile file) {
         try {
             String imageUrl = cloudinaryService.uploadImage(file);
-            return ResponseEntity.ok("Profile image uploaded successfully: " + imageUrl);
+            userService.updateUserProfileImageByEmail(email, imageUrl);
+            return ResponseEntity.ok(imageUrl);
         } catch (IOException e) {
             return ResponseEntity.status(500).body("Error uploading image: " + e.getMessage());
         }
     }
+
 }

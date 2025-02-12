@@ -3,6 +3,8 @@ package uk.bovykina.matching_guru.service;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,12 +23,15 @@ import uk.bovykina.matching_guru.util.JwtUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final AuthRepository authRepository;
@@ -40,22 +45,44 @@ public class UserService {
     private final CloudinaryService cloudinaryService;
 
     public String uploadProfileImage(Long userId, MultipartFile file) throws IOException {
+        log.info("Uploading profile image for user ID: {}", userId);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found for ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
 
         String imageUrl = cloudinaryService.uploadImage(file);
         user.setProfileImageUrl(imageUrl);
         userRepository.save(user);
 
+        log.info("Profile image uploaded successfully for user ID: {}", userId);
         return imageUrl;
     }
 
+    public void updateUserProfileImageByEmail(String email, String imageUrl) {
+        log.info("Updating profile image for user with email: {}", email);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    log.error("User not found with email: {}", email);
+                    return new IllegalArgumentException("User not found");
+                });
+        user.setProfileImageUrl(imageUrl);
+        userRepository.save(user);
+        log.info("Profile image updated for user with email: {}", email);
+    }
+
     public boolean isJoinCodeValid(String joinCode) {
-        return organisationRepository.existsByJoinCode(joinCode);
+        boolean exists = organisationRepository.existsByJoinCode(joinCode);
+        log.info("Checked join code: {} - Valid: {}", joinCode, exists);
+        return exists;
     }
 
     public UserDto createUser(UserCreateDto userCreateDto) {
+        log.info("Attempting to create user with email: {}", userCreateDto.getEmail());
+
         if (userRepository.findByEmail(userCreateDto.getEmail()).isPresent()) {
+            log.error("User with email {} already exists!", userCreateDto.getEmail());
             throw new IllegalArgumentException("User with this email already exists.");
         }
 
@@ -66,13 +93,17 @@ public class UserService {
         User user = userMapper.toUser(userCreateDto);
 
         if (userCreateDto.getJoinCode() != null) {
+            log.info("Finding organisation by join code: {}", userCreateDto.getJoinCode());
             Organisation organisation = organisationRepository.findByJoinCode(userCreateDto.getJoinCode())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid join code."));
+                    .orElseThrow(() -> {
+                        log.error("Invalid join code: {}", userCreateDto.getJoinCode());
+                        return new IllegalArgumentException("Invalid join code.");
+                    });
             user.setOrganisation(organisation);
         }
 
         User savedUser = userRepository.save(user);
-        System.out.println("User saved: " + savedUser);
+        log.info("User created successfully: {}", savedUser);
 
         // Create Auth record
         Auth auth = new Auth();
@@ -80,87 +111,118 @@ public class UserService {
         auth.setPasswordHash(passwordEncoder.encode(userCreateDto.getPassword()));
         auth.setLastLogin(LocalDateTime.now());
         authRepository.save(auth);
-        System.out.println("Auth details saved for user: " + savedUser.getEmail());
+        log.info("Auth details saved for user: {}", savedUser.getEmail());
 
         return userMapper.toUserDto(savedUser);
     }
 
     public UserDto updateUser(UserUpdateDto updateDto) {
+        log.info("Updating user with ID: {}", updateDto.getId());
+
         User user = userRepository.findById(updateDto.getId())
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + updateDto.getId()));
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", updateDto.getId());
+                    return new UserNotFoundException("User not found with ID: " + updateDto.getId());
+                });
 
         if (updateDto.getFirstName() != null) user.setFirstName(updateDto.getFirstName());
         if (updateDto.getLastName() != null) user.setLastName(updateDto.getLastName());
         if (updateDto.getEmail() != null) user.setEmail(updateDto.getEmail());
-        if (updateDto.getUniEmail() != null) user.setUniEmail(updateDto.getUniEmail());
-        if (updateDto.getStudentNumber() != null) user.setStudentNumber(updateDto.getStudentNumber());
-        if (updateDto.getRole() != null) user.setRole(updateDto.getRole());
-        if (updateDto.getPersonalityType() != null) user.setPersonalityType(updateDto.getPersonalityType());
-        if (updateDto.getGender() != null) user.setGender(updateDto.getGender());
-        if (updateDto.getEthnicity() != null) user.setEthnicity(updateDto.getEthnicity());
-        if (updateDto.getNationality() != null) user.setNationality(updateDto.getNationality());
-        if (updateDto.getHomeCountry() != null) user.setHomeCountry(updateDto.getHomeCountry());
-        if (updateDto.getLivingArrangement() != null) user.setLivingArrangement(updateDto.getLivingArrangement());
-        if (updateDto.getDisability() != null) user.setDisability(updateDto.getDisability());
 
         User savedUser = userRepository.save(user);
+        log.info("User updated successfully: {}", savedUser.getId());
         return userMapper.toUserDto(savedUser);
     }
 
     @Transactional
     public void resetPassword(Long userId, String newPassword) {
+        log.info("Resetting password for user ID: {}", userId);
+
         Auth auth = authRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Auth record not found for user."));
+                .orElseThrow(() -> {
+                    log.error("Auth record not found for user ID: {}", userId);
+                    return new IllegalArgumentException("Auth record not found for user.");
+                });
+
         auth.setPasswordHash(passwordEncoder.encode(newPassword));
         authRepository.save(auth);
+        log.info("Password reset successful for user ID: {}", userId);
     }
 
     public void deleteUser(Long id) {
+        log.info("Attempting to delete user with ID: {}", id);
+
         if (!userRepository.existsById(id)) {
+            log.error("User not found with ID: {}", id);
             throw new UserNotFoundException("User not found with ID: " + id);
         }
+
         userRepository.deleteById(id);
+        log.info("User deleted successfully: {}", id);
     }
 
-
     public LoginResponse login(String email, String password) {
+        log.info("User attempting to log in: {}", email);
+
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found for login: {}", email);
+                    return new EntityNotFoundException("User not found");
+                });
 
         Auth auth = authRepository.findByUser(user)
-                .orElseThrow(() -> new EntityNotFoundException("Auth record not found"));
+                .orElseThrow(() -> {
+                    log.error("Auth record not found for user: {}", email);
+                    return new EntityNotFoundException("Auth record not found");
+                });
 
         if (!passwordEncoder.matches(password, auth.getPasswordHash())) {
+            log.error("Invalid credentials for user: {}", email);
             throw new IllegalArgumentException("Invalid credentials");
         }
+
         String token = jwtService.generateToken(email, jwtSecret);
+        log.info("User logged in successfully: {}", email);
 
         UserResponseDto userDto = userMapper.toUserResponseDto(user);
-
         return new LoginResponse(token, userDto);
     }
 
     public UserResponseDto getUserById(Long id) {
-        User user = userRepository.findById(id)
+        log.info("Fetching user by ID: {}", id);
+        return userRepository.findById(id)
+                .map(userMapper::toUserResponseDto)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return userMapper.toUserResponseDto(user);
     }
 
     public UserResponseDto getUserByEmail(String email) {
-        User user = userRepository.findByEmail(email)
+        log.info("Fetching user by email: {}", email);
+        return userRepository.findByEmail(email)
+                .map(userMapper::toUserResponseDto)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-        return userMapper.toUserResponseDto(user);
     }
 
+
     public List<UserResponseDto> getAllUsers() {
-        return userRepository.findAll().stream()
+        log.info("Fetching all users from the database...");
+
+        List<User> users = userRepository.findAll();
+        if (users.isEmpty()) {
+            log.warn("No users found in the database.");
+        } else {
+            log.info("Successfully fetched {} users.", users.size());
+        }
+
+        return users.stream()
                 .map(userMapper::toUserResponseDto)
                 .collect(Collectors.toList());
     }
 
     private static class UserMapper {
+        private static final Logger log = LoggerFactory.getLogger(UserMapper.class);
 
         User toUser(UserCreateDto userCreateDto) {
+            log.info("Mapping UserCreateDto to User entity for email: {}", userCreateDto.getEmail());
             User user = new User();
             user.setFirstName(userCreateDto.getFirstName());
             user.setLastName(userCreateDto.getLastName());
@@ -175,10 +237,12 @@ public class UserService {
             user.setHomeCountry(userCreateDto.getHomeCountry());
             user.setLivingArrangement(userCreateDto.getLivingArrangement());
             user.setDisability(userCreateDto.getDisability());
+            log.info("Successfully mapped UserCreateDto to User entity for email: {}", userCreateDto.getEmail());
             return user;
         }
 
         UserDto toUserDto(User user) {
+            log.info("Converting User entity to UserDto for user ID: {}", user.getId());
             UserDto userDto = new UserDto();
             userDto.setId(user.getId());
             userDto.setFirstName(user.getFirstName());
@@ -194,10 +258,13 @@ public class UserService {
             userDto.setHomeCountry(user.getHomeCountry());
             userDto.setLivingArrangement(user.getLivingArrangement());
             userDto.setDisability(user.getDisability());
+            log.info("Successfully converted User entity to UserDto for user ID: {}", user.getId());
             return userDto;
         }
 
         UserResponseDto toUserResponseDto(User user) {
+            log.info("Transforming User entity to UserResponseDto for user ID: {}", user.getId());
+
             UserResponseDto userDto = new UserResponseDto();
             userDto.setId(user.getId());
             userDto.setFirstName(user.getFirstName());
@@ -217,17 +284,23 @@ public class UserService {
             if (user.getOrganisation() != null) {
                 userDto.setOrganisationId(user.getOrganisation().getId());
                 userDto.setOrganisationName(user.getOrganisation().getName());
+                log.info("User ID: {} belongs to Organisation ID: {}", user.getId(), user.getOrganisation().getId());
             }
 
-            userDto.setParticipations(
-                    user.getParticipations().stream()
-                            .map(part -> new UserParticipationDto(
-                                    part.getProgrammeYear().getAcademicYear(),
-                                    part.getRole()
-                            ))
-                            .collect(Collectors.toList())
-            );
+            if (user.getParticipations() != null) {
+                userDto.setParticipations(
+                        user.getParticipations().stream()
+                                .map(part -> new UserParticipationDto(
+                                        part.getProgrammeYear().getAcademicYear(),
+                                        part.getRole()
+                                ))
+                                .collect(Collectors.toList())
+                );
+            } else {
+                userDto.setParticipations(new ArrayList<>());
+            }
 
+            log.info("Successfully transformed User entity to UserResponseDto for user ID: {}", user.getId());
             return userDto;
         }
     }
