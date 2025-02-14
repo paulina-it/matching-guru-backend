@@ -7,7 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
 import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.entity.enums.AcademicStage;
+import uk.bovykina.matching_guru.entity.enums.CriterionType;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
+import uk.bovykina.matching_guru.entity.enums.Skill;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
 import uk.bovykina.matching_guru.service.MatchService;
@@ -138,7 +140,7 @@ public class GaleShapleyService {
             double compatibilityScore = calculateScore(mentor, mentee, weights);
             log.info("🔗 Создание матча: {} (ментор) → {} (менти) с совместимостью {}", mentor.getId(), mentee.getId(), compatibilityScore);
 
-            MatchCreateDto matchCreateDto = new MatchCreateDto(mentor.getId(), mentee.getId(), compatibilityScore);
+            MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore);
             matchService.createMatch(matchCreateDto);
 
             mentor.setIsMatched(true);
@@ -159,27 +161,67 @@ public class GaleShapleyService {
         }
 
         double score = 0;
+        double maxScore = weights.values().stream().mapToInt(Integer::intValue).sum(); // Sum of all weights
 
-        if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) {
-            score += weights.getOrDefault("courseMatch", 10);
-        } else if (mentor.getCourseGroup().equals(mentee.getCourseGroup())) {
-            score += weights.getOrDefault("groupMatch", 5);
-        } else {
+        if (maxScore == 0) {
             return 0;
         }
 
-        Set<DayOfWeek> commonDays = new HashSet<>(mentor.getAvailableDays());
-        commonDays.retainAll(mentee.getAvailableDays());
-        if (!commonDays.isEmpty()) {
-            score += weights.getOrDefault("availability", 8);
+        // ✅ **Field Matching (Course or Group)**
+        if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) {
+            score += weights.getOrDefault(CriterionType.FIELD.name(), 10);
         }
 
-        if (mentor.getTimeRange().equals(mentee.getTimeRange())) {
-            score += weights.getOrDefault("timeRange", 5);
+        // ✅ **Availability (Common Available Days)**
+        if (!Collections.disjoint(mentor.getAvailableDays(), mentee.getAvailableDays())) {
+            score += weights.getOrDefault(CriterionType.AVAILABILITY.name(), 8);
         }
 
-        return score;
+        // ✅ **Personality Type Matching**
+        if (mentor.getUser().getPersonalityType() != null && mentee.getUser().getPersonalityType() != null
+                && mentor.getUser().getPersonalityType().equals(mentee.getUser().getPersonalityType())) {
+            score += weights.getOrDefault(CriterionType.PERSONALITY.name(), 7);
+        }
+
+        // ✅ **Skill Overlap**
+        int skillWeight = weights.getOrDefault(CriterionType.SKILLS.name(), 0);
+        if (skillWeight > 0) {
+            Set<Skill> mentorSkills = mentor.getSkills();
+            Set<Skill> menteeSkills = mentee.getSkills();
+
+            long matchingSkills = mentorSkills.stream()
+                    .filter(menteeSkills::contains)
+                    .count();
+
+            if (matchingSkills > 0) {
+                score += skillWeight * matchingSkills;
+            }
+        }
+
+        // ✅ **Same Gender Preference**
+        if (mentor.getUser().getGender() != null && mentee.getUser().getGender() != null
+                && mentor.getUser().getGender().equals(mentee.getUser().getGender())) {
+            score += weights.getOrDefault(CriterionType.GENDER.name(), 3);
+        }
+
+        // ✅ **Close Age Groups (Within 2 Groups)**
+        if (mentor.getUser().getAgeGroup() != null && mentee.getUser().getAgeGroup() != null
+                && Math.abs(mentor.getUser().getAgeGroup().ordinal() - mentee.getUser().getAgeGroup().ordinal()) <= 2) {
+            score += weights.getOrDefault(CriterionType.AGE.name(), 4);
+        }
+
+        // ✅ **Same Nationality**
+//        if (mentor.getUser().getNationality() != null && mentee.getUser().getNationality() != null
+//                && mentor.getUser().getNationality().equals(mentee.getUser().getNationality())) {
+//            score += weights.getOrDefault(CriterionType.NATIONALITY.name(), 6);
+//        }
+
+        // 🔹 **Normalize Score to 0-100 Scale**
+        double normalizedScore = (score / maxScore) * 100;
+        return Math.round(normalizedScore);
     }
+
+
     private boolean isValidMentorship(AcademicStage mentorStage, AcademicStage menteeStage) {
         Map<AcademicStage, List<AcademicStage>> validMentorships = Map.of(
                 AcademicStage.FOUNDATION, List.of(AcademicStage.FIRST_YEAR),
