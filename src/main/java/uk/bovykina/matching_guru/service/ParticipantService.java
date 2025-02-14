@@ -97,7 +97,6 @@ public class ParticipantService {
         dto.setUserName(user.getFirstName() + " " + user.getLastName());
         dto.setUserEmail(user.getEmail());
         dto.setUserGender(user.getGender());
-        dto.setUserNationality(user.getNationality());
         dto.setUserHomeCountry(user.getHomeCountry());
 
         ProgrammeYear programmeYear = participant.getProgrammeYear();

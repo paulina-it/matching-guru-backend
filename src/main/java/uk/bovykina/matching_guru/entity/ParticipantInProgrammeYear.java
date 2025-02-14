@@ -9,6 +9,7 @@ import uk.bovykina.matching_guru.entity.enums.*;
 
 import java.time.DayOfWeek;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Getter
@@ -36,8 +37,11 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ParticipantRole role;
 
-    private Integer menteesNumber;
-    private Boolean isMatched;
+    @Column(nullable = false)
+    private Integer menteesNumber = 0;
+
+    @Column(nullable = false)
+    private Boolean isMatched = false;
 
     @Enumerated(EnumType.STRING)
     private AcademicStage academicStage;
@@ -66,19 +70,19 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof ParticipantInProgrammeYear that)) return false;
-        return id != null && id.equals(that.getId());
+        return Objects.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(id);
     }
 
     public Course getCourse() {
-        return user.getCourse();
+        return user != null ? user.getCourse() : null;
     }
 
     public CourseGroup getCourseGroup() {
-        return user.getCourse().getGroup();
+        return user != null && user.getCourse() != null ? user.getCourse().getGroup() : null;
     }
 }
