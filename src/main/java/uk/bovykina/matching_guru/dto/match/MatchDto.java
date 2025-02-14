@@ -10,4 +10,5 @@ public class MatchDto {
     private Long menteeId;
     private MatchStatus status;
     private double compatibilityScore;
+    private Long programmeYearId;
 }

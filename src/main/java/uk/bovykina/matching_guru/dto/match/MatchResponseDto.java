@@ -10,6 +10,8 @@ import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 @NoArgsConstructor
 public class MatchResponseDto {
     private Long id;
+    private Long programmeYearId;
+
     private Long mentorId;
     private String mentorName;
     private String mentorAcademicStage;

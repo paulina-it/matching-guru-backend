@@ -21,18 +21,24 @@ public class Match extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "mentorId", nullable = false)
+    @JoinColumn(name = "mentor_id", nullable = false)
     @ToString.Exclude
     private ParticipantInProgrammeYear mentor;
 
     @ManyToOne
-    @JoinColumn(name = "menteeId", nullable = false)
+    @JoinColumn(name = "mentee_id", nullable = false)
     @ToString.Exclude
     private ParticipantInProgrammeYear mentee;
 
     @Enumerated(EnumType.STRING)
     private MatchStatus status;
     private double compatibilityScore;
+
+    @ManyToOne
+    @JoinColumn(name = "programme_year_id", nullable = false)
+    @ToString.Exclude
+    private ProgrammeYear programmeYear;
+
 
     @Override
     public boolean equals(Object o) {

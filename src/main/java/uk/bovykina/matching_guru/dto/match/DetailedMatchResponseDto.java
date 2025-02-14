@@ -13,6 +13,7 @@ import java.util.List;
 public class DetailedMatchResponseDto {
 
     private Long id;
+    private Long programmeYearId;
     private MatchStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
