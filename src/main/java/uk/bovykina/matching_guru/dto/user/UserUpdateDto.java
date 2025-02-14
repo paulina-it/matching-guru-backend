@@ -28,4 +28,5 @@ public class UserUpdateDto {
     private LivingArrangement livingArrangement;
     private String disability;
     private String profileImageUrl;
+    private AgeGroup ageGroup;
 }

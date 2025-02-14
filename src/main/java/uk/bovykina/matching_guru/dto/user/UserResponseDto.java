@@ -29,4 +29,5 @@ public class UserResponseDto {
     private String disability;
     private List<UserParticipationDto> participations;
     private String profileImageUrl;
+    private AgeGroup ageGroup;
 }

@@ -50,14 +50,16 @@ public class User extends BaseEntity {
     private PersonalityType personalityType;
 
     private String ethnicity;
-    private String nationality;
     private String homeCountry;
 
     @Enumerated(EnumType.STRING)
     private LivingArrangement livingArrangement;
 
     private String disability;
-    private String dbsCertificate;
+    private Boolean dbsCertificate = false;
+
+    @Enumerated(EnumType.STRING)
+    private AgeGroup ageGroup;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

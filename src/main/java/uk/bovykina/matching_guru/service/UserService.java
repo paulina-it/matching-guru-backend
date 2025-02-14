@@ -233,10 +233,11 @@ public class UserService {
             user.setPersonalityType(userCreateDto.getPersonalityType());
             user.setGender(userCreateDto.getGender());
             user.setEthnicity(userCreateDto.getEthnicity());
-            user.setNationality(userCreateDto.getNationality());
+            user.setAgeGroup(userCreateDto.getAgeGroup());
             user.setHomeCountry(userCreateDto.getHomeCountry());
             user.setLivingArrangement(userCreateDto.getLivingArrangement());
             user.setDisability(userCreateDto.getDisability());
+            user.setProfileImageUrl(userCreateDto.getProfileImageUrl());
             log.info("Successfully mapped UserCreateDto to User entity for email: {}", userCreateDto.getEmail());
             return user;
         }
@@ -254,10 +255,11 @@ public class UserService {
             userDto.setPersonalityType(user.getPersonalityType());
             userDto.setGender(user.getGender());
             userDto.setEthnicity(user.getEthnicity());
-            userDto.setNationality(user.getNationality());
+            userDto.setAgeGroup(user.getAgeGroup());
             userDto.setHomeCountry(user.getHomeCountry());
             userDto.setLivingArrangement(user.getLivingArrangement());
             userDto.setDisability(user.getDisability());
+            userDto.setProfileImageUrl(user.getProfileImageUrl());
             log.info("Successfully converted User entity to UserDto for user ID: {}", user.getId());
             return userDto;
         }
@@ -276,10 +278,11 @@ public class UserService {
             userDto.setPersonalityType(user.getPersonalityType());
             userDto.setGender(user.getGender());
             userDto.setEthnicity(user.getEthnicity());
-            userDto.setNationality(user.getNationality());
+            userDto.setAgeGroup(user.getAgeGroup());
             userDto.setHomeCountry(user.getHomeCountry());
             userDto.setLivingArrangement(user.getLivingArrangement());
             userDto.setDisability(user.getDisability());
+            userDto.setProfileImageUrl(user.getProfileImageUrl());
 
             if (user.getOrganisation() != null) {
                 userDto.setOrganisationId(user.getOrganisation().getId());
