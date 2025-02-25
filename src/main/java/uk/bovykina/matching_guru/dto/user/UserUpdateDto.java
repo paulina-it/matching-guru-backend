@@ -21,7 +21,6 @@ public class UserUpdateDto {
     private Long organisationId;
     private PersonalityType personalityType;
     private Gender gender;
-    private Integer age;
     private String ethnicity;
     private String nationality;
     private String homeCountry;

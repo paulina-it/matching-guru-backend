@@ -3,9 +3,11 @@ package uk.bovykina.matching_guru.dto.match;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.entity.enums.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -17,7 +19,6 @@ public class DetailedMatchResponseDto {
     private MatchStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
     private ParticipantDto mentor;
     private ParticipantDto mentee;
     private double compatibilityScore;
@@ -34,5 +35,14 @@ public class DetailedMatchResponseDto {
         private String course;
         private List<String> availableDays;
         private String timePreference;
+        private Set<Skill> skills;
+        private PersonalityType personalityType;
+        private Gender gender;
+        private String ethnicity;
+        private String homeCountry;
+        private LivingArrangement livingArrangement;
+        private String disability;
+        private String profileImageUrl;
+        private AgeGroup ageGroup;
     }
 }

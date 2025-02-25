@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/auth/signup", "/auth/login", "/auth/status", "users/upload-profile-image").permitAll() // Allow unauthorised access to these endpoints
+                        .requestMatchers("/", "/auth/signup", "/auth/login", "/auth/status", "/users/upload-profile-image").permitAll() // Allow unauthorised access to these endpoints
                         .anyRequest().authenticated() // Protect other endpoints
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

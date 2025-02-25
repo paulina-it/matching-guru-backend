@@ -1,6 +1,9 @@
 package uk.bovykina.matching_guru.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,14 +19,17 @@ import uk.bovykina.matching_guru.service.OrganisationService;
 import uk.bovykina.matching_guru.service.UserService;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/organisations")
 @RequiredArgsConstructor
+@Slf4j
 public class OrganisationController {
 
     private final OrganisationService organisationService;
     private final UserService userService;
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @PostMapping("/create")
     public ResponseEntity<?> createOrganisation(
@@ -99,5 +105,44 @@ public class OrganisationController {
     public ResponseEntity<Void> deleteOrganisation(@PathVariable Long id) {
         organisationService.deleteOrganisation(id);
         return ResponseEntity.noContent().build();
+    }
+
+
+    /**
+     * Fetches organisation info available to admins.
+     */
+    @GetMapping("/admin/organisation-status")
+    public ResponseEntity<?> checkAdminOrganisationStatus() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            logger.warn("Unauthenticated access attempt to /auth/admin/organisation-status");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        String email = authentication.getName();
+        try {
+            UserResponseDto userDto = userService.getUserByEmail(email);
+
+            // Check if the user has ADMIN role
+            if (!UserRole.ADMIN.equals(userDto.getRole())) {
+                logger.warn("Access denied: Non-admin user attempted to access /admin/organisation-status, email: {}", email);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied: User is not an admin");
+            }
+
+            // Check if the admin has an associated organisation
+            if (userDto.getOrganisationId() == null) {
+                return ResponseEntity.ok("Admin has no organisation");
+            }
+
+            Optional<OrganisationDto> organisation = organisationService.getOrganisationById(userDto.getOrganisationId());
+            return ResponseEntity.ok(organisation);
+        } catch (UserNotFoundException e) {
+            logger.error("User not found during /auth/admin/organisation-status check for email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        } catch (Exception e) {
+            logger.error("An error occurred during organisation status check for admin, email: {}", email, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while checking organisation status");
+        }
     }
 }

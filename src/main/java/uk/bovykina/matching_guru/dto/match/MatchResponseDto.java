@@ -16,6 +16,7 @@ public class MatchResponseDto {
     private String mentorName;
     private String mentorAcademicStage;
     private String mentorCourse;
+    private double compatibilityScore;
 
     private Long menteeId;
     private String menteeName;

@@ -64,7 +64,12 @@ public class CourseGroupService {
     public List<CourseGroupDto> getCourseGroupsByOrganisationId(Long organisationId) {
         log.info("🔄 Fetching course groups for organisation ID: {}", organisationId);
         return courseGroupRepository.findByOrganisationId(organisationId).stream()
-                .map(this::toCourseGroupDto)
+                .map(courseGroup -> {
+                    CourseGroupDto dto = toCourseGroupDto(courseGroup);
+                    List<Course> courses = courseRepository.findByGroupId(courseGroup.getId());
+                    dto.setCourses(courses.stream().map(this::toCourseDto).collect(Collectors.toList()));
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -100,6 +105,17 @@ public class CourseGroupService {
         dto.setId(courseGroup.getId());
         dto.setName(courseGroup.getName());
         dto.setOrganisationId(courseGroup.getOrganisation().getId());
+        return dto;
+    }
+
+
+    private CourseDto toCourseDto(Course course) {
+        CourseDto dto = new CourseDto();
+        dto.setId(course.getId());
+        dto.setName(course.getName());
+        dto.setType(course.getType());
+        dto.setDuration(course.getDuration());
+        dto.setGroupId(course.getGroup().getId());
         return dto;
     }
 }

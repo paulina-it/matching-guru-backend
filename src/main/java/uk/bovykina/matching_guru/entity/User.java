@@ -35,10 +35,6 @@ public class User extends BaseEntity {
     @ToString.Exclude
     private Organisation organisation;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @ToString.Exclude
-    private UserDemographics userDemographics;
-
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;

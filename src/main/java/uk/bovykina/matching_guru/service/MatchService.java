@@ -120,7 +120,7 @@ public class MatchService {
                     formatFullName(match.getMentor()),
                     match.getMentor().getAcademicStage().name(),
                     Optional.ofNullable(match.getMentor().getCourse()).map(c -> c.getName()).orElse("N/A"),
-
+                    match.getCompatibilityScore(),
                     match.getMentee().getId(),
                     formatFullName(match.getMentee()),
                     match.getMentee().getAcademicStage().name(),
@@ -152,7 +152,16 @@ public class MatchService {
                     participant.getAcademicStage().name(),
                     Optional.ofNullable(participant.getCourse()).map(c -> c.getName()).orElse("N/A"),
                     participant.getAvailableDays().stream().map(Enum::name).collect(Collectors.toList()),
-                    participant.getTimeRange().name()
+                    participant.getTimeRange().name(),
+                    participant.getSkills(),
+                    participant.getUser().getPersonalityType(),
+                    participant.getUser().getGender(),
+                    participant.getUser().getEthnicity(),
+                    participant.getUser().getHomeCountry(),
+                    participant.getUser().getLivingArrangement(),
+                    participant.getUser().getDisability(),
+                    participant.getUser().getProfileImageUrl(),
+                    participant.getUser().getAgeGroup()
             );
         }
 

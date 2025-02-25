@@ -71,7 +71,6 @@ public class JwtUtils {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    // Optional: Method to extract custom claims, such as "role"
     public String extractRole(String token) {
         return extractClaim(token, claims -> claims.get("role", String.class));
     }
