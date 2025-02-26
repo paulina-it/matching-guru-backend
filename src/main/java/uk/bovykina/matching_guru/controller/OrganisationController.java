@@ -145,4 +145,29 @@ public class OrganisationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while checking organisation status");
         }
     }
+
+    @PostMapping("/join")
+    public ResponseEntity<?> joinOrganisation(@RequestParam String joinCode) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        String email = authentication.getName();
+        try {
+            UserResponseDto userDto = userService.getUserByEmail(email);
+
+            OrganisationDto organisation = organisationService.joinOrganisation(userDto.getId(), joinCode);
+            return ResponseEntity.ok(organisation);
+
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while joining organisation");
+        }
+    }
+
 }
