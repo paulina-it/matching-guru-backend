@@ -7,5 +7,6 @@ public enum CriterionType {
     SKILLS,
     GENDER,
     AGE,
-    NATIONALITY
+    NATIONALITY,
+    LIVING_ARRANGEMENT
 }
