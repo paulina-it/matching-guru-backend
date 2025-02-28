@@ -46,6 +46,7 @@ public class User extends BaseEntity {
     private PersonalityType personalityType;
 
     private String ethnicity;
+    private String nationality;
     private String homeCountry;
 
     @Enumerated(EnumType.STRING)

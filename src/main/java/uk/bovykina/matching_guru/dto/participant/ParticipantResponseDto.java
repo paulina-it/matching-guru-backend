@@ -18,9 +18,17 @@ public class ParticipantResponseDto {
     private Integer userAge;
     private String userNationality;
     private String userHomeCountry;
+    private PersonalityType userPersonalityType;
+    private Long userCourseId;
+    private LivingArrangement userLivingArrangement;
+    private String userDisability;
+    private Boolean userDbsCertificate;
+    private AgeGroup userAgeGroup;
+
     private Long programmeYearId;
     private String programmeName;
     private String academicYear;
+
     private ParticipantRole role;
     private Integer menteesNumber;
     private Boolean isMatched;
@@ -31,5 +39,6 @@ public class ParticipantResponseDto {
     private Boolean isReturningParticipant;
     private Set<DayOfWeek> availableDays;
     private TimeRange timeRange;
+    private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
 }

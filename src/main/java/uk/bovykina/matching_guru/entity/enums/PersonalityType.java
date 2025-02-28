@@ -35,8 +35,8 @@ public enum PersonalityType {
 
     static {
         for (PersonalityType type : values()) {
-            FORMAT_MAP.put(type.formattedName.toLowerCase(), type); // Space-based format
-            FORMAT_MAP.put(type.name().toLowerCase(), type); // Underscore-based format
+            FORMAT_MAP.put(type.formattedName.toLowerCase(), type);
+            FORMAT_MAP.put(type.name().toLowerCase(), type);
         }
     }
 
