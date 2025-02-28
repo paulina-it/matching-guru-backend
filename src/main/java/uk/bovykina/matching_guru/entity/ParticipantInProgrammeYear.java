@@ -60,6 +60,9 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private TimeRange timeRange;
 
+    @Enumerated(EnumType.STRING)
+    private MeetingFrequency meetingsFrequency;
+
     @ElementCollection(fetch = FetchType.EAGER, targetClass = Skill.class)
     @Enumerated(EnumType.STRING)
     @CollectionTable(name = "participant_skills", joinColumns = @JoinColumn(name = "participant_id"))

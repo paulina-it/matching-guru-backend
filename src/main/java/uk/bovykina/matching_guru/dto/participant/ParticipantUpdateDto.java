@@ -2,10 +2,7 @@ package uk.bovykina.matching_guru.dto.participant;
 
 import lombok.Getter;
 import lombok.Setter;
-import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
-import uk.bovykina.matching_guru.entity.enums.AcademicStage;
-import uk.bovykina.matching_guru.entity.enums.Skill;
-import uk.bovykina.matching_guru.entity.enums.TimeRange;
+import uk.bovykina.matching_guru.entity.enums.*;
 
 import java.time.DayOfWeek;
 import java.util.Set;
@@ -23,5 +20,6 @@ public class ParticipantUpdateDto {
     private Boolean isReturningParticipant;
     private Set<DayOfWeek> availableDays;
     private TimeRange timeRange;
+    private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
 }

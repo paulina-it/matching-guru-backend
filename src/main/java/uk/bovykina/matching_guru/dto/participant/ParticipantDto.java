@@ -23,5 +23,6 @@ public class ParticipantDto {
     private Boolean isReturningParticipant;
     private Set<DayOfWeek> availableDays;
     private TimeRange timeRange;
+    private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
 }
