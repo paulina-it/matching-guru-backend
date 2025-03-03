@@ -31,9 +31,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.PATCH, "/api/matches/update-status").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/", "/auth/signup", "/auth/login", "/auth/status", "/users/upload-profile-image").permitAll() // Allow unauthorised access to these endpoints
-                        .anyRequest().authenticated() // Protect other endpoints
+                        .requestMatchers("/", "/auth/signup", "/auth/login", "/auth/status", "/users/upload-profile-image").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
@@ -44,7 +45,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:3001"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(Arrays.asList("Authorization"));

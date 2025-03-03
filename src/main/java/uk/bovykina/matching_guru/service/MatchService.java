@@ -121,6 +121,23 @@ public class MatchService {
         return MatchMapper.toDetailedResponseDto(match);
     }
 
+    @Transactional
+    public void updateMatchStatus(List<Long> matchIds, MatchStatus status) {
+        if (matchIds == null || matchIds.isEmpty()) {
+            log.info("Updating status of all matches to {}", status);
+            List<Match> matches = matchRepository.findAll();
+            matches.forEach(match -> match.setStatus(status));
+            matchRepository.saveAll(matches);
+        } else {
+            log.info("Updating status of matches with IDs {} to {}", matchIds, status);
+            List<Match> matches = matchRepository.findAllById(matchIds);
+            if (matches.isEmpty()) {
+                throw new IllegalArgumentException("No matches found for provided IDs");
+            }
+            matches.forEach(match -> match.setStatus(status));
+            matchRepository.saveAll(matches);
+        }
+    }
 
     private static class MatchMapper {
 
