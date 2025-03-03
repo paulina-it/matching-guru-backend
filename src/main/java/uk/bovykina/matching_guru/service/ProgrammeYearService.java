@@ -1,6 +1,7 @@
 package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.programme.*;
@@ -8,10 +9,7 @@ import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.CriterionType;
-import uk.bovykina.matching_guru.repository.ParticipantRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeYearRepository;
+import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +23,7 @@ public class ProgrammeYearService {
     private final ProgrammeRepository programmeRepository;
     private final ProgrammeMatchingCriteriaRepository matchingCriteriaRepository;
     private final ParticipantRepository participantRepository;
+    private final MatchRepository matchRepository;
 
     @Transactional
     public ProgrammeYearResponseDto createProgrammeYear(ProgrammeYearCreateDto createDto) {
@@ -38,6 +37,7 @@ public class ProgrammeYearService {
         programmeYear.setJoinCode(generateJoinCode());
 //        programmeYear.setCustomSettings(createDto.getCustomSettings());
         programmeYear.setPreferredAlgorithm(createDto.getPreferredAlgorithm());
+//        programmeYear.setInitialMatchingIsDone(false);
 
         ProgrammeYear savedProgrammeYear = programmeYearRepository.save(programmeYear);
 
@@ -151,6 +151,9 @@ public class ProgrammeYearService {
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);
+
+        boolean hasMatches = matchRepository.existsByProgrammeYearId(programmeYear.getId());
+        dto.setInitialMatchingIsDone(hasMatches);
 
         return dto;
     }
