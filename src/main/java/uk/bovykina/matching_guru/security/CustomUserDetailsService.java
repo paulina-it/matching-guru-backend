@@ -1,6 +1,7 @@
 package uk.bovykina.matching_guru.security;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,6 +11,7 @@ import uk.bovykina.matching_guru.entity.Auth;
 import uk.bovykina.matching_guru.repository.AuthRepository;
 import uk.bovykina.matching_guru.repository.UserRepository;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -24,7 +26,8 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         Auth auth = authRepository.findByUser(user)
                 .orElseThrow(() -> new UsernameNotFoundException("Authentication details not found for user: " + email));
-
-        return new CustomUserDetails(user, auth);
+        UserDetails userDetails = new CustomUserDetails(user, auth);
+        log.info("👤 Loaded User: {}, Role: {}", userDetails.getUsername(), userDetails.getAuthorities());
+        return userDetails;
     }
 }
