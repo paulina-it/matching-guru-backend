@@ -20,5 +20,5 @@ public class ProgrammeYearResponseDto {
     private AlgorithmType preferredAlgorithm;
     private List<MatchingCriteriaDto> matchingCriteria;
     private Integer participantCount;
-
+    private Boolean initialMatchingIsDone;
 }
