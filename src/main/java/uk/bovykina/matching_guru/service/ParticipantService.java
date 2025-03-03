@@ -7,16 +7,11 @@ import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.participant.ParticipantCreateDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
-import uk.bovykina.matching_guru.entity.Course;
-import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
-import uk.bovykina.matching_guru.entity.ProgrammeYear;
-import uk.bovykina.matching_guru.entity.User;
-import uk.bovykina.matching_guru.repository.CourseRepository;
-import uk.bovykina.matching_guru.repository.ParticipantRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeYearRepository;
-import uk.bovykina.matching_guru.repository.UserRepository;
+import uk.bovykina.matching_guru.entity.*;
+import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,6 +23,8 @@ public class ParticipantService {
     private final UserRepository userRepository;
     private final ProgrammeYearRepository programmeYearRepository;
     private final CourseRepository courseRepository;
+    private final MatchRepository matchRepository;
+    private final  MatchService matchService;
 
     @Transactional
     public ParticipantResponseDto createParticipant(ParticipantCreateDto createDto) {
@@ -68,6 +65,29 @@ public class ParticipantService {
         return participantRepository.findById(id)
                 .map(this::toParticipantResponseDto)
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
+    }
+
+    public Object getParticipantInfoByUserId(Long userId) {
+        log.info("Fetching participant info for ID: {}", userId);
+
+        ParticipantInProgrammeYear participant = participantRepository.findByUserId(userId)
+                .orElseThrow(() -> {
+                    log.error("Participant with ID {} not found", userId);
+                    return new IllegalArgumentException("Participant not found");
+                });
+
+        Optional<Match> match = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        log.info("🔍 Checking match for participantID {}: {}", participant.getId(), match);
+
+        if (match.isPresent()) {
+            log.info("Match found for participant ID: {}, returning DetailedMatchResponseDto", participant.getId());
+            log.info("✅ {}", match);
+            return matchService.getDetailedMatchById(match.get().getId());
+        } else {
+            log.info("No match found for participant ID: {}, returning ParticipantResponseDto", participant.getId());
+            log.info("❌ {}", participant);
+            return toParticipantResponseDto(participant);
+        }
     }
 
     public ParticipantResponseDto getParticipantByUserId(Long userId) {

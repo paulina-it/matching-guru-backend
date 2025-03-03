@@ -50,6 +50,22 @@ public class ParticipantController {
         }
     }
 
+    @GetMapping("/info/{id}")
+    public ResponseEntity<?> getParticipantInfoByUserId(@PathVariable Long id) {
+        try {
+            Object response = participantService.getParticipantInfoByUserId(id);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            log.error("Participant not found with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error while fetching participant with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred while fetching participant");
+        }
+    }
+
+
     @GetMapping("/user/{id}")
     public ResponseEntity<?> getParticipantByUserId(@PathVariable Long id) {
         try {

@@ -3,7 +3,6 @@ package uk.bovykina.matching_guru.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +55,7 @@ public class MatchService {
     }
 
     @Transactional
-    public MatchResponseDto updateMatchStatus(Long matchId, MatchUpdateDto matchUpdateDto) {
+    public MatchResponseDto updateMatchStatus(Long matchId, MatchStatusUpdateDto matchUpdateDto) {
         log.info("Updating status of match ID: {} to {}", matchId, matchUpdateDto.getStatus());
 
         Match match = matchRepository.findById(matchId)
@@ -108,6 +107,20 @@ public class MatchService {
         log.info("Successfully retrieved detailed match information for ID: {}", matchId);
         return MatchMapper.toDetailedResponseDto(match);
     }
+
+    public DetailedMatchResponseDto getDetailedMatchByParticipantId(Long participantId) {
+        log.info("Fetching detailed match for participant ID: {}", participantId);
+
+        Match match = matchRepository.findByMentorIdOrMenteeId(participantId)
+                .orElseThrow(() -> {
+                    log.error("No match found for participant ID {}", participantId);
+                    return new IllegalArgumentException("No match found for this participant");
+                });
+
+        log.info("Successfully retrieved match for participant ID: {}", participantId);
+        return MatchMapper.toDetailedResponseDto(match);
+    }
+
 
     private static class MatchMapper {
 
