@@ -3,7 +3,9 @@ package uk.bovykina.matching_guru.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.match.*;
@@ -138,6 +140,26 @@ public class MatchService {
             matchRepository.saveAll(matches);
         }
     }
+
+    public Page<MatchResponseDto> searchMatches(
+            Long programmeYearId, String query, MatchStatus status, int page, int size, String sortBy, String sortOrder) {
+
+        log.info("Fetching matches for ProgrammeYear: {}, Query: '{}', Status: {}, SortBy: {}, Order: {}",
+                programmeYearId, query, status, sortBy, sortOrder);
+
+        if (query == null || query.trim().isEmpty()) query = "%";
+
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortOrder) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Page<Match> matches = matchRepository.searchMatches(programmeYearId, query, status, pageable);
+
+        log.info("✅ Found {} matches for ProgrammeYear: {}, Query: '{}', Status: {}",
+                matches.getTotalElements(), programmeYearId, query, status);
+
+        return matches.map(MatchMapper::toResponseDto);
+    }
+
 
     private static class MatchMapper {
 

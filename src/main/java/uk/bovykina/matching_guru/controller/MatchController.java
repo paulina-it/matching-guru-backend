@@ -63,4 +63,17 @@ public class MatchController {
         return ResponseEntity.ok("Matches updated successfully");
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<Page<MatchResponseDto>> searchMatches(
+            @RequestParam Long programmeYearId,
+            @RequestParam(required = false, defaultValue = "") String query,
+            @RequestParam(required = false) MatchStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(defaultValue = "updatedAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortOrder) {
+
+        return ResponseEntity.ok(matchService.searchMatches(programmeYearId, query, status, page, size, sortBy, sortOrder));
+    }
+
 }

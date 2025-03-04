@@ -7,13 +7,36 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uk.bovykina.matching_guru.entity.Match;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 
 import java.util.Optional;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 
+
     @EntityGraph(attributePaths = {"mentor", "mentee", "programmeYear"})
     Page<Match> findByProgrammeYearId(Long programmeYearId, Pageable pageable);
+
+    @Query("""
+                SELECT m FROM Match m 
+                JOIN FETCH m.mentor me 
+                JOIN FETCH m.mentee mt 
+                WHERE m.programmeYear.id = :programmeYearId 
+                AND (
+                    LOWER(me.user.firstName) LIKE LOWER(CONCAT('%', :query, '%')) 
+                    OR LOWER(me.user.lastName) LIKE LOWER(CONCAT('%', :query, '%')) 
+                    OR LOWER(mt.user.firstName) LIKE LOWER(CONCAT('%', :query, '%')) 
+                    OR LOWER(mt.user.lastName) LIKE LOWER(CONCAT('%', :query, '%')) 
+                    OR LOWER(me.user.email) LIKE LOWER(CONCAT('%', :query, '%')) 
+                    OR LOWER(mt.user.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                )
+                AND (:status IS NULL OR m.status = :status)
+            """)
+    Page<Match> searchMatches(@Param("programmeYearId") Long programmeYearId,
+                              @Param("query") String query,
+                              @Param("status") MatchStatus status,
+                              Pageable pageable);
+
 
     @Query("SELECT m FROM Match m JOIN FETCH m.mentor JOIN FETCH m.mentee WHERE m.programmeYear.id = :programmeYearId")
     Page<Match> fetchMatchesWithParticipants(Long programmeYearId, Pageable pageable);
