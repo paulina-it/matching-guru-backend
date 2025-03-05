@@ -111,14 +111,40 @@ public class UserService {
                     return new UserNotFoundException("User not found.");
                 });
 
+        if (updateDto.getEmail() != null && !updateDto.getEmail().equals(user.getEmail())) {
+            if (userRepository.findByEmail(updateDto.getEmail()).isPresent()) {
+                log.warn("⚠️ Email {} already exists!", updateDto.getEmail());
+                throw new IllegalArgumentException("Email already in use.");
+            }
+            user.setEmail(updateDto.getEmail());
+        }
+
         if (updateDto.getFirstName() != null) user.setFirstName(updateDto.getFirstName());
         if (updateDto.getLastName() != null) user.setLastName(updateDto.getLastName());
-        if (updateDto.getEmail() != null) user.setEmail(updateDto.getEmail());
+        if (updateDto.getUniEmail() != null) user.setUniEmail(updateDto.getUniEmail());
+        if (updateDto.getStudentNumber() != null) user.setStudentNumber(updateDto.getStudentNumber());
+        if (updateDto.getRole() != null) user.setRole(updateDto.getRole());
+        if (updateDto.getPersonalityType() != null) user.setPersonalityType(updateDto.getPersonalityType());
+        if (updateDto.getGender() != null) user.setGender(updateDto.getGender());
+        if (updateDto.getEthnicity() != null) user.setEthnicity(updateDto.getEthnicity());
+        if (updateDto.getNationality() != null) user.setNationality(updateDto.getNationality());
+        if (updateDto.getHomeCountry() != null) user.setHomeCountry(updateDto.getHomeCountry());
+        if (updateDto.getLivingArrangement() != null) user.setLivingArrangement(updateDto.getLivingArrangement());
+        if (updateDto.getDisability() != null) user.setDisability(updateDto.getDisability());
+        if (updateDto.getProfileImageUrl() != null) user.setProfileImageUrl(updateDto.getProfileImageUrl());
+        if (updateDto.getAgeGroup() != null) user.setAgeGroup(updateDto.getAgeGroup());
+
+        if (updateDto.getOrganisationId() != null) {
+            Organisation organisation = organisationRepository.findById(updateDto.getOrganisationId())
+                    .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+            user.setOrganisation(organisation);
+        }
 
         User savedUser = userRepository.save(user);
         log.info("✅ User updated successfully: {}", savedUser.getId());
         return userMapper.toUserResponseDto(savedUser);
     }
+
 
     /**
      * Deletes a user by ID.
