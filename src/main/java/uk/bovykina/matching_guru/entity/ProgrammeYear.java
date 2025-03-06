@@ -8,6 +8,7 @@ import lombok.ToString;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -25,10 +26,10 @@ public class ProgrammeYear extends BaseEntity {
     private String academicYear;
     private Boolean isActive;
     private String joinCode;
+    private String feedbackConfirmationCode;
 
 //    @Column(columnDefinition = "json")
 //    private String customSettings;
-
 
     @ManyToOne
     @JoinColumn(name = "programme_id")
@@ -51,5 +52,10 @@ public class ProgrammeYear extends BaseEntity {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public String generateFeedbackConfirmationCode() {
+        this.feedbackConfirmationCode = UUID.randomUUID().toString();
+        return this.feedbackConfirmationCode;
     }
 }

@@ -38,6 +38,7 @@ public class ProgrammeYearService {
 //        programmeYear.setCustomSettings(createDto.getCustomSettings());
         programmeYear.setPreferredAlgorithm(createDto.getPreferredAlgorithm());
 //        programmeYear.setInitialMatchingIsDone(false);
+        programmeYear.generateFeedbackConfirmationCode();
 
         ProgrammeYear savedProgrammeYear = programmeYearRepository.save(programmeYear);
 
