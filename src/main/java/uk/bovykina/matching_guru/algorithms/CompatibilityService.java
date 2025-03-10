@@ -21,9 +21,8 @@ public class CompatibilityService {
     private final ProgrammeMatchingCriteriaRepository criteriaRepository;
 
     protected double calculateScore(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, Map<String, Integer> weights) {
-        // Check if the mentorship is valid based on academic stages
         if (!isValidMentorship(mentor.getAcademicStage(), mentee.getAcademicStage())) {
-            return 0;  // Invalid mentorship should not get a score
+            return 0;
         }
 
         double score = 0;
@@ -31,10 +30,10 @@ public class CompatibilityService {
 
         if (maxScore == 0) {
             log.warn("⚠ Weight sum is zero! Using default maxScore of 100.");
-            maxScore = 100;  // Prevent division by zero
+            maxScore = 100;
         }
 
-        // ✅ **Field Matching (Course or Group)**
+        // **Field Matching (Course or Group)**
         boolean sameCourse = mentor.getCourse().getId().equals(mentee.getCourse().getId());
         boolean sameGroup = mentor.getCourseGroup().equals(mentee.getCourseGroup());
 
@@ -44,17 +43,17 @@ public class CompatibilityService {
             score += maxScore * 0.5;
         }
 
-        // ✅ **Availability (Common Available Days)**
+        // **Availability (Common Available Days)**
         if (!Collections.disjoint(mentor.getAvailableDays(), mentee.getAvailableDays())) {
             score += weights.getOrDefault(CriterionType.AVAILABILITY.name(), 8);
         }
 
-        // ✅ **Personality Type Compatibility (MBTI)**
+        // **Personality Type Compatibility (MBTI)**
         if (mentor.getUser().getPersonalityType() != null && mentee.getUser().getPersonalityType() != null) {
             score += getMBTICompatibilityScore(mentor.getUser().getPersonalityType(), mentee.getUser().getPersonalityType(), weights);
         }
 
-        // ✅ **Skill Matching (Normalized)**
+        // **Skill Matching**
         Set<Skill> mentorSkills = mentor.getSkills();
         Set<Skill> menteeSkills = mentee.getSkills();
         long matchingSkills = mentorSkills.stream().filter(menteeSkills::contains).count();
@@ -64,19 +63,18 @@ public class CompatibilityService {
             score += weights.getOrDefault(CriterionType.SKILLS.name(), 5) * skillMatchRatio;
         }
 
-        // ✅ **Same Gender Preference**
+        // **Same Gender Preference**
         if (mentor.getUser().getGender() != null && mentee.getUser().getGender() != null
                 && mentor.getUser().getGender().equals(mentee.getUser().getGender())) {
             score += weights.getOrDefault(CriterionType.GENDER.name(), 3);
         }
 
-        // ✅ **Close Age Groups (Within 2 Groups)**
+        // **Close Age Groups**
         if (mentor.getUser().getAgeGroup() != null && mentee.getUser().getAgeGroup() != null
                 && Math.abs(mentor.getUser().getAgeGroup().ordinal() - mentee.getUser().getAgeGroup().ordinal()) <= 2) {
             score += weights.getOrDefault(CriterionType.AGE.name(), 4);
         }
 
-        // 🔹 **Normalize Score to 0-100 Scale**
         double normalizedScore = (score / maxScore) * 100;
         return Math.round(normalizedScore);
     }
