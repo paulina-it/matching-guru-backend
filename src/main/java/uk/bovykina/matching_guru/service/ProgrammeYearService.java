@@ -1,14 +1,16 @@
 package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.bovykina.matching_guru.dto.programme.*;
+import uk.bovykina.matching_guru.dto.programme.MatchingCriteriaDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeYearCreateDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeYearResponseDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeYearUpdateDto;
 import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
-import uk.bovykina.matching_guru.entity.enums.CriterionType;
+import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
@@ -35,19 +37,31 @@ public class ProgrammeYearService {
         programmeYear.setAcademicYear(createDto.getAcademicYear());
         programmeYear.setIsActive(true);
         programmeYear.setJoinCode(generateJoinCode());
-//        programmeYear.setCustomSettings(createDto.getCustomSettings());
         programmeYear.setPreferredAlgorithm(createDto.getPreferredAlgorithm());
-//        programmeYear.setInitialMatchingIsDone(false);
         programmeYear.generateFeedbackConfirmationCode();
+
+        programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
+        if (createDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
+            if (createDto.getApprovalThreshold() == null || createDto.getApprovalThreshold() < 0 || createDto.getApprovalThreshold() > 100) {
+                throw new IllegalArgumentException("Approval threshold must be between 0 and 100 when using THRESHOLD mode.");
+            }
+            programmeYear.setApprovalThreshold(createDto.getApprovalThreshold());
+        } else {
+            programmeYear.setApprovalThreshold(null);
+        }
 
         ProgrammeYear savedProgrammeYear = programmeYearRepository.save(programmeYear);
 
-        // Save matching criteria
         if (createDto.getMatchingCriteria() != null) {
             saveMatchingCriteria(savedProgrammeYear, createDto.getMatchingCriteria());
         }
 
         return toProgrammeYearResponseDto(savedProgrammeYear);
+    }
+
+    public  ProgrammeYear getById(Long id) {
+        return programmeYearRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("ProgrammeYear not found"));
     }
 
     public ProgrammeYearResponseDto getProgrammeYear(Long id) {
@@ -79,16 +93,13 @@ public class ProgrammeYearService {
 
     @Transactional(readOnly = true)
     public List<MatchingCriteriaDto> getMatchingCriteriaByProgrammeYear(Long programmeYearId) {
-        // Fetch ProgrammeYear
         ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
                 .orElseThrow(() -> new IllegalArgumentException("ProgrammeYear not found with ID: " + programmeYearId));
 
-        // Retrieve and convert matching criteria
         return matchingCriteriaRepository.findByProgrammeYearId(programmeYearId).stream()
                 .map(this::toMatchingCriteriaDto)
                 .collect(Collectors.toList());
     }
-
 
     @Transactional
     public ProgrammeYearResponseDto updateProgrammeYear(Long id, ProgrammeYearUpdateDto updateDto) {
@@ -101,10 +112,20 @@ public class ProgrammeYearService {
         if (updateDto.getPreferredAlgorithm() != null) {
             programmeYear.setPreferredAlgorithm(updateDto.getPreferredAlgorithm());
         }
-//        if (updateDto.getCustomSettings() != null) {
-//            programmeYear.setCustomSettings(updateDto.getCustomSettings());
-//        }
+
         programmeYear.setIsActive(updateDto.isActive());
+
+        if (updateDto.getMatchApprovalType() != null) {
+            programmeYear.setMatchApprovalType(updateDto.getMatchApprovalType());
+            if (updateDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
+                if (updateDto.getApprovalThreshold() == null || updateDto.getApprovalThreshold() < 0 || updateDto.getApprovalThreshold() > 100) {
+                    throw new IllegalArgumentException("Approval threshold must be between 0 and 100 when using THRESHOLD mode.");
+                }
+                programmeYear.setApprovalThreshold(updateDto.getApprovalThreshold());
+            } else {
+                programmeYear.setApprovalThreshold(null);
+            }
+        }
 
         if (updateDto.getMatchingCriteria() != null) {
             saveMatchingCriteria(programmeYear, updateDto.getMatchingCriteria());
@@ -115,7 +136,6 @@ public class ProgrammeYearService {
     }
 
     private void saveMatchingCriteria(ProgrammeYear programmeYear, List<MatchingCriteriaDto> criteriaDtos) {
-        // Validate total weight
         int totalWeight = criteriaDtos.stream()
                 .mapToInt(MatchingCriteriaDto::getWeight)
                 .sum();
@@ -147,8 +167,9 @@ public class ProgrammeYearService {
         dto.setAcademicYear(programmeYear.getAcademicYear());
         dto.setIsActive(programmeYear.getIsActive());
         dto.setJoinCode(programmeYear.getJoinCode());
-//        dto.setCustomSettings(programmeYear.getCustomSettings());
         dto.setPreferredAlgorithm(programmeYear.getPreferredAlgorithm());
+        dto.setMatchApprovalType(programmeYear.getMatchApprovalType());
+        dto.setApprovalThreshold(programmeYear.getApprovalThreshold());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

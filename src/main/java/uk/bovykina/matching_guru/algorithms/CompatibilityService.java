@@ -5,13 +5,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.AcademicStage;
 import uk.bovykina.matching_guru.entity.enums.CriterionType;
 import uk.bovykina.matching_guru.entity.enums.PersonalityType;
 import uk.bovykina.matching_guru.entity.enums.Skill;
+import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -19,10 +22,16 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CompatibilityService {
     private final ProgrammeMatchingCriteriaRepository criteriaRepository;
+    private final Map<String, Double> compatibilityCache = new ConcurrentHashMap<>();
 
     protected double calculateScore(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, Map<String, Integer> weights) {
         if (!isValidMentorship(mentor.getAcademicStage(), mentee.getAcademicStage())) {
             return 0;
+        }
+
+        String cacheKey = mentor.getId() + "-" + mentee.getId();
+        if (compatibilityCache.containsKey(cacheKey)) {
+            return compatibilityCache.get(cacheKey);
         }
 
         double score = 0;
@@ -75,10 +84,30 @@ public class CompatibilityService {
             score += weights.getOrDefault(CriterionType.AGE.name(), 4);
         }
 
+        // **Living Arrangement**
+        if (mentor.getUser().getLivingArrangement() != null && mentee.getUser().getLivingArrangement() != null
+                && Math.abs(mentor.getUser().getLivingArrangement().ordinal() - mentee.getUser().getLivingArrangement().ordinal()) <= 2) {
+            score += weights.getOrDefault(CriterionType.LIVING_ARRANGEMENT.name(), 4);
+        }
+
         double normalizedScore = (score / maxScore) * 100;
+        compatibilityCache.put(cacheKey, normalizedScore);
+
         return Math.round(normalizedScore);
     }
 
+    protected boolean needsApproval(double matchScore, ProgrammeYear programmeYear) {
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.AUTO) {
+            return false;
+        }
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.MANUAL) {
+            return true;
+        }
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
+            return matchScore < programmeYear.getApprovalThreshold();
+        }
+        return true;
+    }
 
     protected boolean isValidMentorship(AcademicStage mentorStage, AcademicStage menteeStage) {
         Map<AcademicStage, List<AcademicStage>> validMentorships = Map.of(
@@ -98,6 +127,7 @@ public class CompatibilityService {
                         ProgrammeMatchingCriteria::getWeight
                 ));
     }
+
 
     protected int getMBTICompatibilityScore(PersonalityType mentorType, PersonalityType menteeType, Map<String, Integer> weights) {
         if (mentorType == null || menteeType == null) {

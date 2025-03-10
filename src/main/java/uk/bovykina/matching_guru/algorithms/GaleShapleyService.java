@@ -4,15 +4,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
-import uk.bovykina.matching_guru.entity.*;
-import uk.bovykina.matching_guru.entity.enums.*;
+import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
 import uk.bovykina.matching_guru.service.MatchService;
+import uk.bovykina.matching_guru.service.ProgrammeYearService;
+import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
+import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 
-import java.time.DayOfWeek;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,19 +25,21 @@ import java.util.stream.Collectors;
 public class GaleShapleyService {
 
     private final ParticipantRepository participantRepository;
-    private final ProgrammeMatchingCriteriaRepository criteriaRepository;
     private final MatchService matchService;
     private final CompatibilityService compatibilityService;
+    private final ProgrammeMatchingCriteriaRepository criteriaRepository;
+    private final ProgrammeYearService programmeYearService;
+
+    private final Map<String, Double> compatibilityCache = new ConcurrentHashMap<>();
 
     private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> galeShapley(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
             Map<String, Integer> weights
     ) {
-        Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> matches = new HashMap<>();
+        Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> matches = new ConcurrentHashMap<>();
         Map<ParticipantInProgrammeYear, Queue<ParticipantInProgrammeYear>> mentorPreferences = new HashMap<>();
 
-        // Calculate preferences for each mentor
         for (ParticipantInProgrammeYear mentor : mentors) {
             List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream()
                     .filter(mentee -> isCompatible(mentor, mentee))
@@ -48,7 +54,6 @@ public class GaleShapleyService {
         Queue<ParticipantInProgrammeYear> freeMentors = new LinkedList<>(mentorPreferences.keySet());
         log.info("🔄 Starting Gale-Shapley algorithm with {} active mentors", freeMentors.size());
 
-        // Implement Gale-Shapley algorithm for multiple mentees per mentor
         while (!freeMentors.isEmpty()) {
             ParticipantInProgrammeYear mentor = freeMentors.poll();
             Queue<ParticipantInProgrammeYear> preferences = mentorPreferences.get(mentor);
@@ -58,7 +63,6 @@ public class GaleShapleyService {
                 continue;
             }
 
-            // Try to match the mentor with mentees based on preferences
             while (!preferences.isEmpty()) {
                 ParticipantInProgrammeYear mentee = preferences.poll();
 
@@ -69,13 +73,11 @@ public class GaleShapleyService {
                     continue;
                 }
 
-                // Add mentor to mentee if they are not already matched
                 if (!matches.containsValue(mentee)) {
                     matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
                     log.info("🔗 Created a match: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
-                    break;  // Proceed to next mentor after matching one mentee
+                    break;
                 } else {
-                    // If mentee is already matched, check if the new mentor is preferred
                     ParticipantInProgrammeYear currentMentor = matches.entrySet().stream()
                             .filter(entry -> entry.getValue().contains(mentee))
                             .map(Map.Entry::getKey)
@@ -87,7 +89,7 @@ public class GaleShapleyService {
                         matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
                         freeMentors.add(currentMentor);
                         log.info("🔄 Pair reassigned: {} (new mentor) → {} (mentee)", mentor.getId(), mentee.getId());
-                        break;  // Proceed to next mentor after reassignment
+                        break;
                     }
                 }
             }
@@ -118,6 +120,7 @@ public class GaleShapleyService {
     public void matchParticipants(Long programmeYearId, boolean isInitialMatching) {
         log.info("▶ Starting matching process for ProgrammeYear ID: {} | Initial: {}", programmeYearId, isInitialMatching);
 
+        ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
         List<ParticipantInProgrammeYear> mentors;
         List<ParticipantInProgrammeYear> mentees;
 
@@ -150,7 +153,11 @@ public class GaleShapleyService {
                 double compatibilityScore = compatibilityService.calculateScore(mentor, mentee, weights);
                 log.info("🔗 Creating match: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
 
-                MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore);
+                MatchStatus matchStatus = compatibilityService.needsApproval(compatibilityScore, programmeYear)
+                        ? MatchStatus.PENDING
+                        : MatchStatus.APPROVED;
+
+                MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, matchStatus);
                 matchService.createMatch(matchCreateDto);
 
                 mentor.setIsMatched(true);
@@ -173,6 +180,4 @@ public class GaleShapleyService {
                         ProgrammeMatchingCriteria::getWeight
                 ));
     }
-
-
 }

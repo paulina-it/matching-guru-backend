@@ -3,10 +3,14 @@ package uk.bovykina.matching_guru.algorithms;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.service.MatchService;
 import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
+import uk.bovykina.matching_guru.service.ProgrammeYearService;
 
 import java.util.*;
 
@@ -17,6 +21,7 @@ public class CollaborativeFilteringService {
     private final ParticipantRepository participantRepository;
     private final MatchService matchService;
     private final CompatibilityService compatibilityService;
+    private final ProgrammeYearService programmeYearService;
 
     public static double cosineSimilarity(List<Double> mentorVector, List<Double> menteeVector) {
         double dotProduct = 0.0;
@@ -32,7 +37,7 @@ public class CollaborativeFilteringService {
         mentorMagnitude = Math.sqrt(mentorMagnitude);
         menteeMagnitude = Math.sqrt(menteeMagnitude);
 
-        return dotProduct / (mentorMagnitude * menteeMagnitude);
+        return (mentorMagnitude == 0 || menteeMagnitude == 0) ? 0.0 : dotProduct / (mentorMagnitude * menteeMagnitude);
     }
 
     public List<Double> getParticipantVector(ParticipantInProgrammeYear participant) {
@@ -50,6 +55,13 @@ public class CollaborativeFilteringService {
         List<ParticipantInProgrammeYear> mentors = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
         List<ParticipantInProgrammeYear> mentees = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
 
+        ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
+
+        Map<ParticipantInProgrammeYear, List<Double>> menteeVectors = new HashMap<>();
+        for (ParticipantInProgrammeYear mentee : mentees) {
+            menteeVectors.put(mentee, getParticipantVector(mentee));
+        }
+
         Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
 
         for (ParticipantInProgrammeYear mentor : mentors) {
@@ -58,8 +70,9 @@ public class CollaborativeFilteringService {
             ParticipantInProgrammeYear bestMatch = null;
             double highestSimilarity = 0;
 
-            for (ParticipantInProgrammeYear mentee : mentees) {
-                List<Double> menteeVector = getParticipantVector(mentee);
+            for (Map.Entry<ParticipantInProgrammeYear, List<Double>> entry : menteeVectors.entrySet()) {
+                ParticipantInProgrammeYear mentee = entry.getKey();
+                List<Double> menteeVector = entry.getValue();
 
                 double similarity = cosineSimilarity(mentorVector, menteeVector);
 
@@ -79,7 +92,13 @@ public class CollaborativeFilteringService {
             ParticipantInProgrammeYear mentee = entry.getValue();
 
             double compatibilityScore = calculateScore(mentor, mentee);
-            MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore);
+
+            MatchApprovalType approvalType = programmeYear.getMatchApprovalType();
+            boolean isApproved = (approvalType == MatchApprovalType.AUTO);
+
+            MatchCreateDto matchCreateDto = new MatchCreateDto(
+                    programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, isApproved ? MatchStatus.APPROVED : MatchStatus.PENDING
+            );
             matchService.createMatch(matchCreateDto);
 
             mentor.setIsMatched(true);

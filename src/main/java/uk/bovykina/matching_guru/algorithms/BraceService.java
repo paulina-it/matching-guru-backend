@@ -7,10 +7,14 @@ import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
-import uk.bovykina.matching_guru.entity.enums.*;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeMatchingCriteriaRepository;
 import uk.bovykina.matching_guru.service.MatchService;
+import uk.bovykina.matching_guru.service.ProgrammeYearService;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,6 +28,7 @@ public class BraceService {
     private final ProgrammeMatchingCriteriaRepository criteriaRepository;
     private final MatchService matchService;
     private final CompatibilityService compatibilityService;
+    private final ProgrammeYearService programmeYearService;
 
     @Transactional
     public void matchParticipantsWithBrace(Long programmeYearId) {
@@ -42,10 +47,8 @@ public class BraceService {
         Map<String, Integer> weights = loadMatchingCriteria(programmeYearId);
         log.info("📊 Loaded criteria weights: {}", weights);
 
-        // Initialize matches
         Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
 
-        // Step 1: Calculate compatibility scores for all pairs
         Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> compatibilityScores = new HashMap<>();
         for (ParticipantInProgrammeYear mentor : mentors) {
             Map<ParticipantInProgrammeYear, Double> mentorScores = new HashMap<>();
@@ -56,7 +59,6 @@ public class BraceService {
             compatibilityScores.put(mentor, mentorScores);
         }
 
-        // Step 2: Iteratively find the best pairings
         boolean changesMade;
         do {
             changesMade = false;
@@ -65,20 +67,19 @@ public class BraceService {
                 ParticipantInProgrammeYear bestMentor = findBestMentorForMentee(mentee, compatibilityScores, matches);
 
                 if (bestMentor != null && (!matches.containsKey(mentee) || !matches.get(mentee).equals(bestMentor))) {
-                    // Update the match for the mentee
                     matches.put(mentee, bestMentor);
                     changesMade = true;
                     log.info("🔗 Matched Mentee {} with Mentor {} based on compatibility score", mentee.getId(), bestMentor.getId());
                 }
             }
-        } while (changesMade); // Continue until no more changes are made
+        } while (changesMade);
 
-        // Step 3: Create matches in the database
         matches.forEach((mentee, mentor) -> {
             double compatibilityScore = compatibilityScores.get(mentor).get(mentee);
             log.info("🔗 Creating match: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
 
-            MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore);
+            MatchStatus defaultStatus = determineApprovalType(programmeYearId, compatibilityScore);
+            MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, defaultStatus);
             matchService.createMatch(matchCreateDto);
 
             mentor.setIsMatched(true);
@@ -97,15 +98,13 @@ public class BraceService {
                                                                Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> compatibilityScores,
                                                                Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> currentMatches) {
 
-        // Find the best mentor for the mentee based on compatibility score
         ParticipantInProgrammeYear bestMentor = null;
         double bestScore = 0;
 
-        for (Map.Entry<ParticipantInProgrammeYear, Double> entry : compatibilityScores.get(mentee.getCourse()).entrySet()) {
+        for (Map.Entry<ParticipantInProgrammeYear, Double> entry : compatibilityScores.get(mentee).entrySet()) {
             ParticipantInProgrammeYear mentor = entry.getKey();
             double score = entry.getValue();
 
-            // Ensure the mentor is not already matched or choose the best match for an unmatched mentee
             if ((bestMentor == null || score > bestScore) && (currentMatches.get(mentor) == null || !currentMatches.get(mentor).equals(mentee))) {
                 bestMentor = mentor;
                 bestScore = score;
@@ -120,5 +119,23 @@ public class BraceService {
                         c -> c.getCriterionType().name(),
                         ProgrammeMatchingCriteria::getWeight
                 ));
+    }
+
+    private MatchStatus determineApprovalType(Long programmeYearId, double compatibilityScore) {
+        ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
+
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.AUTO) {
+            return MatchStatus.APPROVED;
+        }
+
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.MANUAL) {
+            return MatchStatus.PENDING;
+        }
+
+        if (programmeYear.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
+            return compatibilityScore < programmeYear.getApprovalThreshold() ? MatchStatus.PENDING : MatchStatus.APPROVED;
+        }
+
+        return MatchStatus.PENDING;
     }
 }

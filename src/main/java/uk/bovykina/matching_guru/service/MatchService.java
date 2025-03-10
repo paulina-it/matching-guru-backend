@@ -46,7 +46,7 @@ public class MatchService {
         Match match = new Match();
         match.setMentor(mentor);
         match.setMentee(mentee);
-        match.setStatus(MatchStatus.PENDING);
+        match.setStatus(matchCreateDto.getStatus());
         match.setCompatibilityScore(matchCreateDto.getCompatibilityScore());
         match.setProgrammeYear(mentor.getProgrammeYear());
 
