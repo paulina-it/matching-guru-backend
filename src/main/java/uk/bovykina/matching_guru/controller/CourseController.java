@@ -2,6 +2,7 @@ package uk.bovykina.matching_guru.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -89,7 +90,17 @@ public class CourseController {
     @DeleteMapping("/{courseId}")
     public ResponseEntity<String> deleteCourse(@PathVariable Long courseId) {
         log.info("📌 Deleting course with ID: {}", courseId);
-        courseService.deleteCourse(courseId);
-        return ResponseEntity.ok("✅ Course deleted successfully.");
+        try {
+            courseService.deleteCourse(courseId);
+            return ResponseEntity.ok("✅ Course deleted successfully.");
+        } catch (DataIntegrityViolationException e) {
+            log.warn("❌ Cannot delete course ID {}: {}", courseId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Cannot delete course: it is still referenced by participants.");
+        } catch (Exception e) {
+            log.error("❌ Unexpected error deleting course ID {}: {}", courseId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Unexpected error occurred while deleting the course.");
+        }
     }
 }
