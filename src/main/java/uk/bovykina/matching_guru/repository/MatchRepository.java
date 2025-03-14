@@ -46,4 +46,8 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 
     @Query("SELECT COUNT(m) > 0 FROM Match m WHERE m.programmeYear.id = :programmeYearId")
     boolean existsByProgrammeYearId(@Param("programmeYearId") Long programmeYearId);
+
+    @Query("SELECT COUNT(m) > 0 FROM Match m WHERE m.mentor.id = :mentorId AND m.mentee.id = :menteeId")
+    boolean existsByMentorIdAndMenteeId(@Param("mentorId") Long mentorId, @Param("menteeId") Long menteeId);
+
 }
