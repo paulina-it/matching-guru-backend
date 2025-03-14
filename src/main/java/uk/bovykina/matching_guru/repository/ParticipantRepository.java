@@ -35,6 +35,8 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
             "WHERE py.programme_id = :programmeId", nativeQuery = true)
     Integer countDistinctParticipantsByProgrammeId(@Param("programmeId") Long programmeId);
 
+    @Query("SELECT COUNT(p) FROM ParticipantInProgrammeYear p WHERE p.programmeYear.id = :programmeYearId AND p.isMatched = false")
+    int countByProgrammeYearIdAndIsMatchedFalse(@Param("programmeYearId") Long programmeYearId);
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole participantRole, boolean b);
 }

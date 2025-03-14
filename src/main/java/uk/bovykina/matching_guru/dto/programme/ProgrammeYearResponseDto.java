@@ -23,4 +23,5 @@ public class ProgrammeYearResponseDto {
     private Boolean initialMatchingIsDone;
     private MatchApprovalType matchApprovalType;
     private Integer approvalThreshold;
+    private Integer unmatchedCount;
 }

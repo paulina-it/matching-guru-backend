@@ -177,6 +177,9 @@ public class ProgrammeYearService {
         boolean hasMatches = matchRepository.existsByProgrammeYearId(programmeYear.getId());
         dto.setInitialMatchingIsDone(hasMatches);
 
+        int unmatchedCount = participantRepository.countByProgrammeYearIdAndIsMatchedFalse(programmeYear.getId());
+        dto.setUnmatchedCount(unmatchedCount);
+
         return dto;
     }
 
