@@ -27,6 +27,10 @@ public class MatchService {
     private final MatchRepository matchRepository;
     private final ParticipantRepository participantRepository;
 
+    public boolean doesMatchExist(Long mentorId, Long menteeId) {
+        return matchRepository.existsByMentorIdAndMenteeId(mentorId, menteeId);
+    }
+
     @Transactional
     public MatchResponseDto createMatch(MatchCreateDto matchCreateDto) {
         log.info("Creating a match between Mentor ID: {} and Mentee ID: {}", matchCreateDto.getMentorId(), matchCreateDto.getMenteeId());
@@ -42,6 +46,11 @@ public class MatchService {
                     log.error("Mentee with ID {} not found", matchCreateDto.getMenteeId());
                     return new IllegalArgumentException("Mentee not found");
                 });
+
+        if (doesMatchExist(matchCreateDto.getMentorId(), matchCreateDto.getMenteeId())) {
+            log.warn("⚠ Skipping duplicate match: Mentor {} → Mentee {}", matchCreateDto.getMentorId(), matchCreateDto.getMenteeId());
+            throw new IllegalStateException("Match already exists");
+        }
 
         Match match = new Match();
         match.setMentor(mentor);
