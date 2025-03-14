@@ -117,7 +117,7 @@ public class ProgrammeService {
                         .collect(Collectors.toSet())
         );
 
-        Integer participants = participantRepository.countParticipantsByProgrammeId(programme.getId());
+        Integer participants = participantRepository.countDistinctParticipantsByProgrammeId(programme.getId());
         dto.setParticipants(participants);
 
         return dto;

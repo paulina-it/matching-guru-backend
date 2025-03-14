@@ -29,10 +29,12 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
         return participants;
     }
 
+    @Query(value = "SELECT COUNT(DISTINCT p.id) " +
+            "FROM participants_in_programme_year p " +
+            "JOIN programme_year py ON p.programme_year_id = py.id " +
+            "WHERE py.programme_id = :programmeId", nativeQuery = true)
+    Integer countDistinctParticipantsByProgrammeId(@Param("programmeId") Long programmeId);
 
-    @Query("SELECT COUNT(p) FROM ParticipantInProgrammeYear p " +
-            "WHERE p.programmeYear.programme.id = :programmeId")
-    Integer countParticipantsByProgrammeId(@Param("programmeId") Long programmeId);
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole participantRole, boolean b);
 }
