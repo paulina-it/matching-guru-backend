@@ -7,13 +7,14 @@ import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 
 import java.util.Objects;
 
-
 @Getter
 @Setter
 @NoArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "matches")
+@Table(name = "matches", uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"mentor_id", "mentee_id"})
+})
 public class Match extends BaseEntity {
 
     @Id
@@ -32,6 +33,7 @@ public class Match extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private MatchStatus status;
+
     private double compatibilityScore;
 
     @ManyToOne
@@ -39,17 +41,18 @@ public class Match extends BaseEntity {
     @ToString.Exclude
     private ProgrammeYear programmeYear;
 
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Match)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Match match = (Match) o;
-        return id != null && id.equals(match.getId());
+        return Objects.equals(mentor, match.mentor) &&
+                Objects.equals(mentee, match.mentee) &&
+                Objects.equals(programmeYear, match.programmeYear);
     }
 
     @Override
     public int hashCode() {
-        return getClass().hashCode();
+        return Objects.hash(mentor, mentee, programmeYear);
     }
 }
