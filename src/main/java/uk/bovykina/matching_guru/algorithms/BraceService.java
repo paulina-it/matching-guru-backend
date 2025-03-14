@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BraceService {
 
+    private static final int MAX_MENTEES_PER_MENTOR = 3;
+
     private final ParticipantRepository participantRepository;
     private final ProgrammeMatchingCriteriaRepository criteriaRepository;
     private final MatchService matchService;
@@ -44,76 +46,129 @@ public class BraceService {
             return;
         }
 
+        // Load criteria weights from repository
         Map<String, Integer> weights = loadMatchingCriteria(programmeYearId);
         log.info("📊 Loaded criteria weights: {}", weights);
 
+        // Create a map to store mentor-mentee matches
         Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
+        Map<ParticipantInProgrammeYear, Integer> mentorAssignmentCount = new HashMap<>();
 
         Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> compatibilityScores = new HashMap<>();
+        log.debug("🔍 Calculating compatibility scores for mentors and mentees...");
         for (ParticipantInProgrammeYear mentor : mentors) {
             Map<ParticipantInProgrammeYear, Double> mentorScores = new HashMap<>();
             for (ParticipantInProgrammeYear mentee : mentees) {
                 double score = compatibilityService.calculateScore(mentor, mentee, weights);
-                mentorScores.put(mentee, score);
+                if (score > 0) {  // ⚠ Ignore invalid matches with score 0
+                    mentorScores.put(mentee, score);
+                }
             }
             compatibilityScores.put(mentor, mentorScores);
+            mentorAssignmentCount.put(mentor, 0); // Track mentee count
         }
 
         boolean changesMade;
+        log.debug("🔄 Starting BRACE algorithm...");
         do {
             changesMade = false;
 
             for (ParticipantInProgrammeYear mentee : mentees) {
-                ParticipantInProgrammeYear bestMentor = findBestMentorForMentee(mentee, compatibilityScores, matches);
+                ParticipantInProgrammeYear bestMentor = findBestMentorForMentee(mentee, mentors, compatibilityScores, matches, mentorAssignmentCount);
 
-                if (bestMentor != null && (!matches.containsKey(mentee) || !matches.get(mentee).equals(bestMentor))) {
+                if (bestMentor != null) {
                     matches.put(mentee, bestMentor);
+                    mentorAssignmentCount.put(bestMentor, mentorAssignmentCount.get(bestMentor) + 1);
                     changesMade = true;
                     log.info("🔗 Matched Mentee {} with Mentor {} based on compatibility score", mentee.getId(), bestMentor.getId());
+                } else {
+                    log.warn("⚠ No valid mentor found for Mentee {}", mentee.getId());  // ⚠ Handle unmatched mentees
                 }
             }
         } while (changesMade);
 
+        // Save the matches
+        log.info("💾 Total matches found: {}", matches.size());
+        if (matches.isEmpty()) {
+            log.warn("⚠ No matches were saved!");
+            return;
+        }
+
         matches.forEach((mentee, mentor) -> {
-            double compatibilityScore = compatibilityScores.get(mentor).get(mentee);
-            log.info("🔗 Creating match: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
+            double compatibilityScore = compatibilityScores.getOrDefault(mentor, Collections.emptyMap()).getOrDefault(mentee, 0.0);
+            if (matchService.doesMatchExist(mentor.getId(), mentee.getId())) {
+                log.warn("⚠ Match already exists: {} → {}", mentor.getId(), mentee.getId());
+                return;
+            }
 
             MatchStatus defaultStatus = determineApprovalType(programmeYearId, compatibilityScore);
             MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, defaultStatus);
-            matchService.createMatch(matchCreateDto);
 
-            mentor.setIsMatched(true);
-            mentee.setIsMatched(true);
-
-            participantRepository.save(mentor);
-            participantRepository.save(mentee);
-
-            log.info("✅ Match saved: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
+            try {
+                matchService.createMatch(matchCreateDto);
+                mentor.setIsMatched(true);
+                mentee.setIsMatched(true);
+                participantRepository.save(mentor);
+                participantRepository.save(mentee);
+                log.info("✅ Match saved: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
+            } catch (Exception e) {
+                log.error("❌ Failed to save match: Mentor {} → Mentee {} | Error: {}", mentor.getId(), mentee.getId(), e.getMessage());
+            }
         });
 
         log.info("✔ BRACE matching process completed for ProgrammeYear ID: {}", programmeYearId);
     }
 
-    private ParticipantInProgrammeYear findBestMentorForMentee(ParticipantInProgrammeYear mentee,
-                                                               Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> compatibilityScores,
-                                                               Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> currentMatches) {
+
+    private ParticipantInProgrammeYear findBestMentorForMentee(
+            ParticipantInProgrammeYear mentee,
+            List<ParticipantInProgrammeYear> mentors,
+            Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> compatibilityScores,
+            Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> currentMatches,
+            Map<ParticipantInProgrammeYear, Integer> mentorAssignmentCount) {  // 🛠 Fix: Ensure this parameter exists
 
         ParticipantInProgrammeYear bestMentor = null;
         double bestScore = 0;
 
-        for (Map.Entry<ParticipantInProgrammeYear, Double> entry : compatibilityScores.get(mentee).entrySet()) {
-            ParticipantInProgrammeYear mentor = entry.getKey();
-            double score = entry.getValue();
+        for (ParticipantInProgrammeYear mentor : mentors) {
+            if (mentorAssignmentCount.get(mentor) >= 3) {
+                continue;
+            }
 
-            if ((bestMentor == null || score > bestScore) && (currentMatches.get(mentor) == null || !currentMatches.get(mentor).equals(mentee))) {
+            double score = compatibilityScores.getOrDefault(mentor, Collections.emptyMap()).getOrDefault(mentee, 0.0);
+            if (score > bestScore) {
                 bestMentor = mentor;
                 bestScore = score;
             }
         }
+
         return bestMentor;
     }
 
+
+    private void saveMatch(Long programmeYearId, ParticipantInProgrammeYear mentee, ParticipantInProgrammeYear mentor, double compatibilityScore) {
+        if (compatibilityScore <= 0) {
+            log.warn("⚠ Invalid match ignored: Mentor {} → Mentee {} with score {}", mentor.getId(), mentee.getId(), compatibilityScore);
+            return;
+        }
+
+        MatchStatus defaultStatus = determineApprovalType(programmeYearId, compatibilityScore);
+        MatchCreateDto matchCreateDto = new MatchCreateDto(programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, defaultStatus);
+
+        try {
+            matchService.createMatch(matchCreateDto);
+            mentor.setIsMatched(true);
+            mentee.setIsMatched(true);
+            participantRepository.save(mentor);
+            participantRepository.save(mentee);
+            log.info("✅ Match saved: {} (mentor) → {} (mentee) with compatibility {}", mentor.getId(), mentee.getId(), compatibilityScore);
+        } catch (Exception e) {
+            log.error("❌ Failed to save match: Mentor {} → Mentee {} | Error: {}", mentor.getId(), mentee.getId(), e.getMessage());
+        }
+    }
+
     private Map<String, Integer> loadMatchingCriteria(Long programmeYearId) {
+        log.debug("🔄 Loading matching criteria for ProgrammeYear ID: {}", programmeYearId);
         return criteriaRepository.findByProgrammeYearId(programmeYearId).stream()
                 .collect(Collectors.toMap(
                         c -> c.getCriterionType().name(),
@@ -125,17 +180,26 @@ public class BraceService {
         ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
 
         if (programmeYear.getMatchApprovalType() == MatchApprovalType.AUTO) {
+            log.debug("🔒 Match status set to APPROVED (AUTO) for compatibility score {}", compatibilityScore);
             return MatchStatus.APPROVED;
         }
 
         if (programmeYear.getMatchApprovalType() == MatchApprovalType.MANUAL) {
+            log.debug("🔒 Match status set to PENDING (MANUAL) for compatibility score {}", compatibilityScore);
             return MatchStatus.PENDING;
         }
 
         if (programmeYear.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
-            return compatibilityScore < programmeYear.getApprovalThreshold() ? MatchStatus.PENDING : MatchStatus.APPROVED;
+            if (compatibilityScore < programmeYear.getApprovalThreshold()) {
+                log.debug("🔒 Match status set to PENDING (THRESHOLD) for compatibility score {}", compatibilityScore);
+                return MatchStatus.PENDING;
+            } else {
+                log.debug("🔒 Match status set to APPROVED (THRESHOLD) for compatibility score {}", compatibilityScore);
+                return MatchStatus.APPROVED;
+            }
         }
 
+        log.debug("🔒 Default match status set to PENDING");
         return MatchStatus.PENDING;
     }
 }

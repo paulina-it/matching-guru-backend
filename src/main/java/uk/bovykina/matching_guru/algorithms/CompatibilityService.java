@@ -91,6 +91,7 @@ public class CompatibilityService {
         }
 
         double normalizedScore = (score / maxScore) * 100;
+        normalizedScore = Math.min(normalizedScore, 100);
         compatibilityCache.put(cacheKey, normalizedScore);
 
         return Math.round(normalizedScore);
