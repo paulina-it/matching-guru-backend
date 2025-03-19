@@ -22,6 +22,7 @@ public class Organisation extends BaseEntity {
 
     private String name;
     private String joinCode;
+    private String logoUrl;
     private String description;
 
     @OneToMany(mappedBy = "organisation", cascade = CascadeType.ALL, orphanRemoval = true)

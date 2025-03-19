@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationCreateDto;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationDto;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationUpdateDto;
@@ -18,6 +19,7 @@ import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.service.OrganisationService;
 import uk.bovykina.matching_guru.service.UserService;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -59,6 +61,22 @@ public class OrganisationController {
         }
     }
 
+    /**
+     * Uploads a logo for an organisation.
+     */
+    @PostMapping("/{organisationId}/upload-logo")
+    public ResponseEntity<String> uploadLogo(
+            @PathVariable Long organisationId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String logoUrl = organisationService.uploadOrganisationLogo(organisationId, file);
+            return ResponseEntity.ok("Logo uploaded successfully: " + logoUrl);
+        } catch (IOException e) {
+            log.error("Error uploading logo for organisation ID: {}", organisationId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to upload logo: " + e.getMessage());
+        }
+    }
 
     @PostMapping("/{organisationId}/invite")
     public ResponseEntity<String> generateInviteToken(

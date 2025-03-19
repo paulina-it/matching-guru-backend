@@ -8,4 +8,5 @@ import lombok.Setter;
 public class OrganisationUpdateDto {
     private String name;
     private String description;
+    private String logoUrl;
 }

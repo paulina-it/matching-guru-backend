@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.organisation.*;
 import uk.bovykina.matching_guru.entity.InviteToken;
 import uk.bovykina.matching_guru.entity.Organisation;
@@ -11,10 +12,13 @@ import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.repository.InviteTokenRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.UserRepository;
+import uk.bovykina.matching_guru.util.CloudinaryService;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -26,6 +30,7 @@ public class OrganisationService {
     private final OrganisationRepository organisationRepository;
     private final InviteTokenRepository inviteTokenRepository;
     private final UserRepository userRepository;
+    private final CloudinaryService cloudinaryService;
     private static final String CHAR_POOL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int INVITE_TOKEN_EXPIRY_HOURS = 24;
 
@@ -48,6 +53,26 @@ public class OrganisationService {
         log.info("Organisation '{}' created successfully with ID: {}", organisation.getName(), organisation.getId());
         return OrganisationMapper.toOrganisationDto(savedOrganisation);
     }
+
+    public String uploadOrganisationLogo(Long organisationId, MultipartFile file) throws IOException {
+        log.info("📸 Uploading logo for organisation ID: {}", organisationId);
+
+        Organisation organisation = organisationRepository.findById(organisationId)
+                .orElseThrow(() -> {
+                    log.error("❌ Organisation not found with ID: {}", organisationId);
+                    return new NoSuchElementException("Organisation not found.");
+                });
+
+        String logoUrl = cloudinaryService.uploadImage(file);
+
+        organisation.setLogoUrl(logoUrl);
+
+        organisationRepository.save(organisation);
+
+        log.info("✅ Logo uploaded successfully for organisation ID: {}", organisationId);
+        return logoUrl;
+    }
+
 
     public String generateInviteToken(Long organisationId, String email) {
         log.info("Generating invite token for organisation ID: {} and email: {}", organisationId, email);

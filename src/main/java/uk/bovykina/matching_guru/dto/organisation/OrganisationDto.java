@@ -10,4 +10,5 @@ public class OrganisationDto {
     private String name;
     private String joinCode;
     private String description;
+    private String logoUrl;
 }
