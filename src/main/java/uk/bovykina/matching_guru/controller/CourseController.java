@@ -2,12 +2,15 @@ package uk.bovykina.matching_guru.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.course.*;
 import uk.bovykina.matching_guru.service.CourseService;
 
+
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -31,12 +34,16 @@ public class CourseController {
      * Create a new course via file upload.
      */
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadCourses(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadCourses(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("organisationId") Long organisationId) {
         try {
-            courseService.processFile(file);
-            return ResponseEntity.ok("File uploaded and processed successfully.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error processing file.");
+            courseService.processFile(file, organisationId);
+            return ResponseEntity.ok("File processed successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Error processing file.");
         }
     }
 

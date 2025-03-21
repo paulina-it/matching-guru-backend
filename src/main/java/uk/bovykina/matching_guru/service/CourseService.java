@@ -16,9 +16,12 @@ import uk.bovykina.matching_guru.dto.course.CourseDto;
 import uk.bovykina.matching_guru.dto.course.CourseUpdateDto;
 import uk.bovykina.matching_guru.entity.Course;
 import uk.bovykina.matching_guru.entity.CourseGroup;
+import uk.bovykina.matching_guru.entity.Organisation;
 import uk.bovykina.matching_guru.entity.Programme;
+import uk.bovykina.matching_guru.entity.enums.CourseType;
 import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.CourseRepository;
+import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeRepository;
 
 import java.io.IOException;
@@ -36,6 +39,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final ProgrammeRepository programmeRepository;
     private final CourseGroupRepository courseGroupRepository;
+    private final OrganisationRepository organisationRepository;
 
     /**
      * Create a new course.
@@ -143,12 +147,12 @@ public class CourseService {
         return dto;
     }
 
-    public void processFile(MultipartFile file) throws IOException {
+    public void processFile(MultipartFile file, Long organisationId) throws IOException {
         try {
             if (file.getOriginalFilename().endsWith(".csv")) {
-                processCSV(file);
+                processCSV(file, organisationId);
             } else if (file.getOriginalFilename().endsWith(".xlsx")) {
-                processXLSX(file);
+                processXLSX(file, organisationId);
             } else {
                 throw new IllegalArgumentException("Unsupported file type");
             }
@@ -158,8 +162,7 @@ public class CourseService {
         }
     }
 
-    // Process CSV files
-    private void processCSV(MultipartFile file) throws IOException {
+    private void processCSV(MultipartFile file, Long organisationId) throws IOException {
         try (Reader reader = new InputStreamReader(file.getInputStream());
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
 
@@ -168,25 +171,23 @@ public class CourseService {
                 String type = record.get("Type");
                 String courseName = record.get("CourseName");
 
-                saveCourse(groupName, type, courseName);
+                saveCourse(groupName, type, courseName, organisationId);
             }
-        } catch (IOException e) {
-            log.error("Error reading CSV file: {}", e.getMessage());
-            throw e;
         }
     }
 
+
     // Process XLSX files
-    private void processXLSX(MultipartFile file) throws IOException {
+    private void processXLSX(MultipartFile file, Long organisationId) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
             for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue; // Skip header
+                if (row.getRowNum() == 0) continue;
                 String groupName = row.getCell(0).getStringCellValue();
                 String type = row.getCell(1).getStringCellValue();
                 String courseName = row.getCell(2).getStringCellValue();
 
-                saveCourse(groupName, type, courseName);
+                saveCourse(groupName, type, courseName, organisationId);
             }
         } catch (IOException e) {
             log.error("Error reading XLSX file: {}", e.getMessage());
@@ -194,13 +195,17 @@ public class CourseService {
         }
     }
 
-    private void saveCourse(String groupName, String type, String courseName) {
-        List<CourseGroup> groups = courseGroupRepository.findByName(groupName);
+    private void saveCourse(String groupName, String type, String courseName, Long organisationId) {
+        Organisation organisation = organisationRepository.findById(organisationId)
+                .orElseThrow(() -> new RuntimeException("Organisation not found with ID: " + organisationId));
+
+        List<CourseGroup> groups = courseGroupRepository.findByNameAndOrganisationId(groupName, organisationId);
         CourseGroup group;
+
         if (groups.isEmpty()) {
             group = new CourseGroup();
             group.setName(groupName);
-//            group.setType(type);
+            group.setOrganisation(organisation);
             group = courseGroupRepository.save(group);
         } else {
             group = groups.get(0);
@@ -209,6 +214,7 @@ public class CourseService {
         Course course = new Course();
         course.setName(courseName);
         course.setGroup(group);
+        course.setType(CourseType.valueOf(type));
         courseRepository.save(course);
     }
 
