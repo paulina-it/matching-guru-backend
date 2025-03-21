@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.course.*;
 import uk.bovykina.matching_guru.service.CourseService;
 
@@ -18,12 +19,25 @@ public class CourseController {
     private final CourseService courseService;
 
     /**
-     * Create a new course.
+     * Create a new course (manual).
      */
     @PostMapping("/create")
     public ResponseEntity<CourseDto> createCourse(@RequestBody CourseCreateDto courseCreateDto) {
         log.info("📌 Creating course: {}", courseCreateDto.getName());
         return ResponseEntity.ok(courseService.createCourse(courseCreateDto));
+    }
+
+    /**
+     * Create a new course via file upload.
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadCourses(@RequestParam("file") MultipartFile file) {
+        try {
+            courseService.processFile(file);
+            return ResponseEntity.ok("File uploaded and processed successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error processing file.");
+        }
     }
 
     /**

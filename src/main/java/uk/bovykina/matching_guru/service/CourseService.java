@@ -2,7 +2,15 @@ package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.course.CourseCreateDto;
 import uk.bovykina.matching_guru.dto.course.CourseDto;
 import uk.bovykina.matching_guru.dto.course.CourseUpdateDto;
@@ -13,6 +21,9 @@ import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.CourseRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeRepository;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -131,4 +142,74 @@ public class CourseService {
         dto.setGroupId(course.getGroup().getId());
         return dto;
     }
+
+    public void processFile(MultipartFile file) throws IOException {
+        try {
+            if (file.getOriginalFilename().endsWith(".csv")) {
+                processCSV(file);
+            } else if (file.getOriginalFilename().endsWith(".xlsx")) {
+                processXLSX(file);
+            } else {
+                throw new IllegalArgumentException("Unsupported file type");
+            }
+        } catch (IOException e) {
+            log.error("Error processing file: {}", e.getMessage());
+            throw new IOException("Error processing file", e);
+        }
+    }
+
+    // Process CSV files
+    private void processCSV(MultipartFile file) throws IOException {
+        try (Reader reader = new InputStreamReader(file.getInputStream());
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+
+            for (CSVRecord record : csvParser) {
+                String groupName = record.get("CourseGroup");
+                String type = record.get("Type");
+                String courseName = record.get("CourseName");
+
+                saveCourse(groupName, type, courseName);
+            }
+        } catch (IOException e) {
+            log.error("Error reading CSV file: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    // Process XLSX files
+    private void processXLSX(MultipartFile file) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row row : sheet) {
+                if (row.getRowNum() == 0) continue; // Skip header
+                String groupName = row.getCell(0).getStringCellValue();
+                String type = row.getCell(1).getStringCellValue();
+                String courseName = row.getCell(2).getStringCellValue();
+
+                saveCourse(groupName, type, courseName);
+            }
+        } catch (IOException e) {
+            log.error("Error reading XLSX file: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    private void saveCourse(String groupName, String type, String courseName) {
+        List<CourseGroup> groups = courseGroupRepository.findByName(groupName);
+        CourseGroup group;
+        if (groups.isEmpty()) {
+            group = new CourseGroup();
+            group.setName(groupName);
+//            group.setType(type);
+            group = courseGroupRepository.save(group);
+        } else {
+            group = groups.get(0);
+        }
+
+        Course course = new Course();
+        course.setName(courseName);
+        course.setGroup(group);
+        courseRepository.save(course);
+    }
+
 }
