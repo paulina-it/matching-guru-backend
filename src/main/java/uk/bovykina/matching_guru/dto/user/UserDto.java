@@ -12,7 +12,7 @@ public class UserDto {
     private String lastName;
     private String email;
     private String uniEmail;
-    private Integer studentNumber;
+    private String studentNumber;
     private UserRole role;
     private PersonalityType personalityType;
     private Gender gender;
