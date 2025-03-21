@@ -202,6 +202,7 @@ public class OrganisationService {
             Organisation organisation = new Organisation();
             organisation.setName(dto.getName());
             organisation.setDescription(dto.getDescription());
+            organisation.setLogoUrl(dto.getLogoUrl());
             return organisation;
         }
 
@@ -211,6 +212,7 @@ public class OrganisationService {
             dto.setName(organisation.getName());
             dto.setJoinCode(organisation.getJoinCode());
             dto.setDescription(organisation.getDescription());
+            dto.setLogoUrl(organisation.getLogoUrl());
             return dto;
         }
 
