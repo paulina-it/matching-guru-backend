@@ -7,11 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import uk.bovykina.matching_guru.service.CourseService;
 import uk.bovykina.matching_guru.service.UserService;
 import uk.bovykina.matching_guru.dto.user.UserResponseDto;
 import uk.bovykina.matching_guru.dto.user.UserUpdateDto;
 import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
+import uk.bovykina.matching_guru.util.CloudinaryService;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,31 +27,6 @@ public class UserController {
 
     private final UserService userService;
 
-    /**
-     * Uploads a profile image.
-     */
-    @PostMapping("/upload-profile-image")
-    public ResponseEntity<String> uploadProfileImage(@RequestParam("email") String email,
-                                                     @RequestParam("file") MultipartFile file) {
-        log.info("📸 Uploading profile image for email: {}", email);
-
-        if (file == null || file.isEmpty()) {
-            log.error("❌ No file received for email: {}", email);
-            return ResponseEntity.status(400).body("No file uploaded.");
-        }
-
-        try {
-            log.info("✅ Received file: {}, Size: {}", file.getOriginalFilename(), file.getSize());
-
-            String imageUrl = userService.uploadProfileImage(email, file);
-            log.info("✅ Profile image updated successfully for email: {}", email);
-
-            return ResponseEntity.ok(imageUrl);
-        } catch (IOException e) {
-            log.error("❌ Error uploading image for email {}: {}", email, e.getMessage());
-            return ResponseEntity.status(500).body("Error uploading image: " + e.getMessage());
-        }
-    }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<String> handleMaxSizeException(MaxUploadSizeExceededException e) {

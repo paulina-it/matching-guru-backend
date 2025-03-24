@@ -61,22 +61,6 @@ public class OrganisationController {
         }
     }
 
-    /**
-     * Uploads a logo for an organisation.
-     */
-    @PostMapping("/{organisationId}/upload-logo")
-    public ResponseEntity<String> uploadLogo(
-            @PathVariable Long organisationId,
-            @RequestParam("file") MultipartFile file) {
-        try {
-            String logoUrl = organisationService.uploadOrganisationLogo(organisationId, file);
-            return ResponseEntity.ok("Logo uploaded successfully: " + logoUrl);
-        } catch (IOException e) {
-            log.error("Error uploading logo for organisation ID: {}", organisationId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to upload logo: " + e.getMessage());
-        }
-    }
 
     @PostMapping("/{organisationId}/invite")
     public ResponseEntity<String> generateInviteToken(
@@ -142,7 +126,7 @@ public class OrganisationController {
         try {
             UserResponseDto userDto = userService.getUserByEmail(email);
 
-            // Check if the user has ADMIN role
+            // Check ADMIN role
             if (!UserRole.ADMIN.equals(userDto.getRole())) {
                 logger.warn("Access denied: Non-admin user attempted to access /admin/organisation-status, email: {}", email);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied: User is not an admin");
