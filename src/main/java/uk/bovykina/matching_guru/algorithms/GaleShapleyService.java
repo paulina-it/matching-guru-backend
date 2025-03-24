@@ -104,6 +104,12 @@ public class GaleShapleyService {
                     mentor.getId(), mentee.getId());
             return false;
         }
+        if (mentee.getCourse() == null || mentor.getCourse() == null) {
+            log.warn("❌ Participant {} or {} is missing a course. Skipping compatibility check.",
+                    mentee.getUser().getEmail(),
+                    mentor.getUser().getEmail());
+            return false;
+        }
 
         boolean sameCourse = mentor.getCourse().getId().equals(mentee.getCourse().getId());
         boolean sameGroup = mentor.getCourseGroup().equals(mentee.getCourseGroup());

@@ -43,8 +43,28 @@ public class CompatibilityService {
         }
 
         // **Field Matching (Course or Group)**
-        boolean sameCourse = mentor.getCourse().getId().equals(mentee.getCourse().getId());
-        boolean sameGroup = mentor.getCourseGroup().equals(mentee.getCourseGroup());
+        boolean sameCourse = false;
+        boolean sameGroup = false;
+
+        if (mentor.getCourse() != null && mentee.getCourse() != null) {
+            sameCourse = Objects.equals(mentor.getCourse().getId(), mentee.getCourse().getId());
+        }
+
+        if (mentor.getCourseGroup() != null && mentee.getCourseGroup() != null) {
+            sameGroup = Objects.equals(mentor.getCourseGroup().getId(), mentee.getCourseGroup().getId());
+        }
+
+        if (mentor.getCourse() == null || mentee.getCourse() == null) {
+            log.warn("🛑 Course is missing for mentor {} or mentee {}",
+                    mentor.getUser().getEmail(),
+                    mentee.getUser().getEmail());
+        }
+
+        if (mentor.getCourseGroup() == null || mentee.getCourseGroup() == null) {
+            log.warn("🛑 Course group is missing for mentor {} or mentee {}",
+                    mentor.getUser().getEmail(),
+                    mentee.getUser().getEmail());
+        }
 
         if (sameCourse) {
             score += maxScore * 0.6;
