@@ -54,6 +54,7 @@ public class OrganisationService {
         return OrganisationMapper.toOrganisationDto(savedOrganisation);
     }
 
+
     public String uploadOrganisationLogo(Long organisationId, MultipartFile file) throws IOException {
         log.info("📸 Uploading logo for organisation ID: {}", organisationId);
 
@@ -63,15 +64,15 @@ public class OrganisationService {
                     return new NoSuchElementException("Organisation not found.");
                 });
 
-        String logoUrl = cloudinaryService.uploadImage(file);
+        String logoUrl = cloudinaryService.uploadImage(file, "organisation_logos");
 
         organisation.setLogoUrl(logoUrl);
-
         organisationRepository.save(organisation);
 
         log.info("✅ Logo uploaded successfully for organisation ID: {}", organisationId);
         return logoUrl;
     }
+
 
 
     public String generateInviteToken(Long organisationId, String email) {

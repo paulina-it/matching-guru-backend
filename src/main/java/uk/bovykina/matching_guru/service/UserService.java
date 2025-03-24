@@ -44,27 +44,16 @@ public class UserService {
     private final CloudinaryService cloudinaryService;
     private final UserMapper userMapper = new UserMapper();
 
+
     /**
-     * Uploads a profile image for a user.
+     * Uploads a profile image and returns the image URL.
      */
-    public String uploadProfileImage(String email, MultipartFile file) throws IOException {
-        log.info("📸 Uploading profile image for email: {}", email);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.error("❌ User not found with email: {}", email);
-                    return new UserNotFoundException("User not found.");
-                });
-
-        String imageUrl = cloudinaryService.uploadImage(file);
-        user.setProfileImageUrl(imageUrl);
-        userRepository.save(user);
-
-        log.info("✅ Profile image uploaded successfully for email: {}", email);
-        return imageUrl;
+    public String uploadProfileImage(MultipartFile file) throws IOException {
+        return cloudinaryService.uploadImage(file, "profile_pictures");
     }
 
     /**
-     * Registers a new user.
+     * Registers a new user with an optional profile image.
      */
     public UserDto createUser(UserCreateDto userCreateDto) {
         log.info("📝 Attempting to create user with email: {}", userCreateDto.getEmail());
@@ -84,6 +73,11 @@ public class UserService {
                         return new IllegalArgumentException("Invalid join code.");
                     });
             user.setOrganisation(organisation);
+        }
+
+        if (userCreateDto.getProfileImageUrl() != null) {
+            user.setProfileImageUrl(userCreateDto.getProfileImageUrl());
+            log.info("✅ Profile image linked for user: {}", userCreateDto.getEmail());
         }
 
         User savedUser = userRepository.save(user);
