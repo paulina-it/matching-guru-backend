@@ -12,10 +12,8 @@ import java.util.Map;
 @Service
 @Slf4j
 public class MatchAssigner {
-
-    private static final int MAX_MENTEES_PER_MENTOR = 3;
-    private static final double MIN_SCORE = 50;
-    private static final double FALLBACK_SCORE = 40;
+    private static final double MIN_SCORE = 30;
+    private static final double FALLBACK_SCORE = 20;
 
     public Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> assignMatches(
             List<ParticipantInProgrammeYear> mentors,
@@ -51,8 +49,9 @@ public class MatchAssigner {
             ParticipantInProgrammeYear bestMentor = null;
             double bestScore = 0;
 
-            for (ParticipantInProgrammeYear mentor : mentors) {
-                if (mentorLoad.get(mentor) >= MAX_MENTEES_PER_MENTOR) continue;
+            for (ParticipantInProgrammeYear mentor : mentors) {int allowed = mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1;
+                if (mentorLoad.getOrDefault(mentor, 0) >= allowed) continue;
+
 
                 double score = scores.getOrDefault(mentor, Map.of()).getOrDefault(mentee, 0.0);
                 if (score >= minScore && score > bestScore) {

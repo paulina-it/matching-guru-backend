@@ -26,7 +26,8 @@ public class CompatibilityService implements CompatibilityCalculator {
 
     private final MentorshipValidator mentorshipValidator;
     private final MBTICompatibilityService mbtiService;
-
+    private static final double COURSE_MATCH_WEIGHT = 0.6;
+    private static final double GROUP_MATCH_WEIGHT = 0.5;
     private final Map<String, Double> compatibilityCache = new ConcurrentHashMap<>();
 
     @Override
@@ -53,9 +54,9 @@ public class CompatibilityService implements CompatibilityCalculator {
                 mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId());
 
         if (sameCourse) {
-            score += maxScore * 0.6;
+            score += maxScore * COURSE_MATCH_WEIGHT;
         } else if (sameGroup) {
-            score += maxScore * 0.5;
+            score += maxScore * GROUP_MATCH_WEIGHT;
         }
 
         // ✅ Availability
