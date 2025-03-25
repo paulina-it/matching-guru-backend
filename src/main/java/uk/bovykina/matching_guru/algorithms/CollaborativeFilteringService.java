@@ -2,14 +2,14 @@ package uk.bovykina.matching_guru.algorithms;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uk.bovykina.matching_guru.algorithms.helpers.MatchSaver;
+import uk.bovykina.matching_guru.algorithms.helpers.MatchingCriteriaProvider;
+import uk.bovykina.matching_guru.algorithms.interfaces.CompatibilityCalculator;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
-import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
-import uk.bovykina.matching_guru.service.MatchService;
-import uk.bovykina.matching_guru.dto.match.MatchCreateDto;
-import uk.bovykina.matching_guru.entity.ProgrammeYear;
-import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 import uk.bovykina.matching_guru.service.ProgrammeYearService;
 
 import java.util.*;
@@ -19,99 +19,70 @@ import java.util.*;
 public class CollaborativeFilteringService {
 
     private final ParticipantRepository participantRepository;
-    private final MatchService matchService;
-    private final CompatibilityService compatibilityService;
     private final ProgrammeYearService programmeYearService;
+    private final CompatibilityCalculator compatibilityCalculator;
+    private final MatchSaver matchSaver;
+    private final MatchingCriteriaProvider criteriaProvider;
 
-    public static double cosineSimilarity(List<Double> mentorVector, List<Double> menteeVector) {
-        double dotProduct = 0.0;
-        double mentorMagnitude = 0.0;
-        double menteeMagnitude = 0.0;
-
-        for (int i = 0; i < mentorVector.size(); i++) {
-            dotProduct += mentorVector.get(i) * menteeVector.get(i);
-            mentorMagnitude += Math.pow(mentorVector.get(i), 2);
-            menteeMagnitude += Math.pow(menteeVector.get(i), 2);
-        }
-
-        mentorMagnitude = Math.sqrt(mentorMagnitude);
-        menteeMagnitude = Math.sqrt(menteeMagnitude);
-
-        return (mentorMagnitude == 0 || menteeMagnitude == 0) ? 0.0 : dotProduct / (mentorMagnitude * menteeMagnitude);
-    }
-
-    public List<Double> getParticipantVector(ParticipantInProgrammeYear participant) {
-        List<Double> vector = new ArrayList<>();
-
-        vector.add((double) participant.getAcademicStage().ordinal());
-        vector.add(participant.getSkills().size() * 1.0);
-        vector.add(participant.getAvailableDays().size() * 1.0);
-        vector.add((double) participant.getCourseGroup().getId());
-
-        return vector;
-    }
-
+    @Transactional
     public void collaborativeFilteringMatch(Long programmeYearId) {
         List<ParticipantInProgrammeYear> mentors = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
         List<ParticipantInProgrammeYear> mentees = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
 
+        if (mentors.isEmpty() || mentees.isEmpty()) return;
+
         ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
+        Map<String, Integer> weights = criteriaProvider.loadWeights(programmeYearId);
 
-        Map<ParticipantInProgrammeYear, List<Double>> menteeVectors = new HashMap<>();
-        for (ParticipantInProgrammeYear mentee : mentees) {
-            menteeVectors.put(mentee, getParticipantVector(mentee));
-        }
-
-        Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
+        Set<ParticipantInProgrammeYear> matchedMentees = new HashSet<>();
+        Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> finalMatches = new HashMap<>();
 
         for (ParticipantInProgrammeYear mentor : mentors) {
             List<Double> mentorVector = getParticipantVector(mentor);
 
-            ParticipantInProgrammeYear bestMatch = null;
-            double highestSimilarity = 0;
+            ParticipantInProgrammeYear bestMentee = null;
+            double bestSimilarity = 0;
 
-            for (Map.Entry<ParticipantInProgrammeYear, List<Double>> entry : menteeVectors.entrySet()) {
-                ParticipantInProgrammeYear mentee = entry.getKey();
-                List<Double> menteeVector = entry.getValue();
+            for (ParticipantInProgrammeYear mentee : mentees) {
+                if (matchedMentees.contains(mentee)) continue;
 
+                List<Double> menteeVector = getParticipantVector(mentee);
                 double similarity = cosineSimilarity(mentorVector, menteeVector);
 
-                if (similarity > highestSimilarity) {
-                    highestSimilarity = similarity;
-                    bestMatch = mentee;
+                if (similarity > bestSimilarity) {
+                    bestSimilarity = similarity;
+                    bestMentee = mentee;
                 }
             }
 
-            if (bestMatch != null) {
-                matches.put(mentor, bestMatch);
+            if (bestMentee != null) {
+                finalMatches.put(mentor, List.of(bestMentee));
+                matchedMentees.add(bestMentee);
             }
         }
 
-        for (Map.Entry<ParticipantInProgrammeYear, ParticipantInProgrammeYear> entry : matches.entrySet()) {
-            ParticipantInProgrammeYear mentor = entry.getKey();
-            ParticipantInProgrammeYear mentee = entry.getValue();
-
-            double compatibilityScore = calculateScore(mentor, mentee);
-
-            MatchApprovalType approvalType = programmeYear.getMatchApprovalType();
-            boolean isApproved = (approvalType == MatchApprovalType.AUTO);
-
-            MatchCreateDto matchCreateDto = new MatchCreateDto(
-                    programmeYearId, mentor.getId(), mentee.getId(), compatibilityScore, isApproved ? MatchStatus.APPROVED : MatchStatus.PENDING
-            );
-            matchService.createMatch(matchCreateDto);
-
-            mentor.setIsMatched(true);
-            mentee.setIsMatched(true);
-
-            participantRepository.save(mentor);
-            participantRepository.save(mentee);
-        }
+        matchSaver.saveMatches(programmeYearId, programmeYear, finalMatches, weights);
     }
 
-    private double calculateScore(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        Map<String, Integer> weights = compatibilityService.loadMatchingCriteria(mentor.getProgrammeYear().getId());
+    private List<Double> getParticipantVector(ParticipantInProgrammeYear p) {
+        return List.of(
+                (double) p.getAcademicStage().ordinal(),
+                (double) p.getSkills().size(),
+                (double) p.getAvailableDays().size(),
+                p.getCourseGroup() != null ? (double) p.getCourseGroup().getId() : 0.0
+        );
+    }
 
-        return compatibilityService.calculateScore(mentor, mentee, weights);
+    private double cosineSimilarity(List<Double> a, List<Double> b) {
+        double dot = 0, magA = 0, magB = 0;
+
+        for (int i = 0; i < a.size(); i++) {
+            dot += a.get(i) * b.get(i);
+            magA += Math.pow(a.get(i), 2);
+            magB += Math.pow(b.get(i), 2);
+        }
+
+        double denominator = Math.sqrt(magA) * Math.sqrt(magB);
+        return (denominator == 0) ? 0 : dot / denominator;
     }
 }

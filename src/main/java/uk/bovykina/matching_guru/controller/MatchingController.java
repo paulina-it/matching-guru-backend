@@ -39,7 +39,7 @@ public class MatchingController {
                 log.info("✔ Gale-Shapley algorithm completed for ProgrammeYear ID: {}", programmeId);
                 break;
             case "brace":
-                braceService.matchParticipantsWithBrace(programmeId);
+                braceService.match(programmeId);
                 log.info("✔ BRACE algorithm completed for ProgrammeYear ID: {}", programmeId);
                 break;
             case "collaborative-filtering":
