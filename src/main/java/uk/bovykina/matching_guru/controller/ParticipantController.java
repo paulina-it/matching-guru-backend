@@ -3,6 +3,7 @@ package uk.bovykina.matching_guru.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -106,6 +107,24 @@ public class ParticipantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating participant");
         }
     }
+
+    @GetMapping("/programme-year/{programmeYearId}")
+    public ResponseEntity<?> getParticipantsByProgrammeYearId(
+            @PathVariable Long programmeYearId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "userName") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortOrder,
+            @RequestParam(required = false) String role
+    ) {
+        Page<ParticipantResponseDto> participants = participantService.getParticipantsByProgrammeYearId(
+                programmeYearId, page, size, search, sortBy, sortOrder, role
+        );
+        return ResponseEntity.ok(participants);
+    }
+
+
 
 //    @DeleteMapping("/{id}")
 //    public ResponseEntity<?> deleteParticipant(@PathVariable Long id) {

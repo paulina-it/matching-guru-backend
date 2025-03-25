@@ -18,7 +18,7 @@ public class UserUpdateDto {
     @Email
     private String uniEmail;
 
-    private Integer studentNumber;
+    private String studentNumber;
     private UserRole role;
     private Long organisationId;
     @JsonSetter(nulls = Nulls.AS_EMPTY)

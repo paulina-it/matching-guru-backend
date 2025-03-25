@@ -24,7 +24,7 @@ public class UserCreateDto {
     @Setter
     private String uniEmail;
 
-    private Integer studentNumber;
+    private String studentNumber;
 
     @NotNull
     private UserRole role;

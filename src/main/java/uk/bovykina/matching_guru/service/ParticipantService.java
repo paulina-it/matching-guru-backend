@@ -2,12 +2,17 @@ package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.participant.ParticipantCreateDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
 import uk.bovykina.matching_guru.entity.*;
+import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
@@ -126,6 +131,49 @@ public class ParticipantService {
         ParticipantInProgrammeYear updatedParticipant = participantRepository.save(participant);
         return toParticipantResponseDto(updatedParticipant);
     }
+
+    public Page<ParticipantResponseDto> getParticipantsByProgrammeYearId(
+            Long programmeYearId,
+            int page,
+            int size,
+            String search,
+            String sortBy,
+            String sortOrder,
+            String roleFilter
+    ) {
+        ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
+                .orElseThrow(() -> new IllegalArgumentException("Programme year not found"));
+
+        Sort.Direction direction = sortOrder.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Page<ParticipantInProgrammeYear> participantPage;
+
+        ParticipantRole roleEnum = null;
+        if (roleFilter != null && !roleFilter.isBlank()) {
+            try {
+                roleEnum = ParticipantRole.valueOf(roleFilter.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid participant role: " + roleFilter);
+            }
+        }
+
+        if (search != null && !search.isBlank() && roleEnum != null) {
+            participantPage = participantRepository.searchByProgrammeYearAndRoleAndUserNameOrEmail(
+                    programmeYear, roleEnum, search, pageable);
+        } else if (search != null && !search.isBlank()) {
+            participantPage = participantRepository.searchByProgrammeYearAndUserNameOrEmail(
+                    programmeYear, search, pageable);
+        } else if (roleEnum != null) {
+            participantPage = participantRepository.findByProgrammeYearAndRole(
+                    programmeYear, roleEnum, pageable);
+        } else {
+            participantPage = participantRepository.findAllByProgrammeYear(programmeYear, pageable);
+        }
+
+        return participantPage.map(this::toParticipantResponseDto);
+    }
+
 
     private ParticipantResponseDto toParticipantResponseDto(ParticipantInProgrammeYear participant) {
         ParticipantResponseDto dto = new ParticipantResponseDto();
