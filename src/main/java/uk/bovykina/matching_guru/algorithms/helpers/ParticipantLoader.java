@@ -6,6 +6,7 @@ import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -14,11 +15,19 @@ public class ParticipantLoader {
 
     private final ParticipantRepository participantRepository;
 
-    public List<ParticipantInProgrammeYear> loadMentors(Long programmeYearId) {
-        return participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
+    public List<ParticipantInProgrammeYear> loadMentees(Long programmeYearId) {
+        List<ParticipantInProgrammeYear> allMentees = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
+
+        return allMentees.stream()
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched()))) // false (unmatched) first
+                .toList();
     }
 
-    public List<ParticipantInProgrammeYear> loadMentees(Long programmeYearId) {
-        return participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
+    public List<ParticipantInProgrammeYear> loadMentors(Long programmeYearId) {
+        List<ParticipantInProgrammeYear> allMentors = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
+
+        return allMentors.stream()
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched()))) // false (unmatched) first
+                .toList();
     }
 }

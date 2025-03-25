@@ -26,8 +26,8 @@ public class BraceService implements MatchingAlgorithm {
     public void match(Long programmeYearId) {
         log.info("▶ Running BRACE for ProgrammeYear ID: {}", programmeYearId);
 
-        List<ParticipantInProgrammeYear> mentors = participantLoader.loadMentors(programmeYearId);
-        List<ParticipantInProgrammeYear> mentees = participantLoader.loadMentees(programmeYearId);
+        List<ParticipantInProgrammeYear> mentors = new ArrayList<>(participantLoader.loadMentors(programmeYearId));
+        List<ParticipantInProgrammeYear> mentees = new ArrayList<>(participantLoader.loadMentees(programmeYearId));
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
             log.warn("⚠ Not enough participants for matching");

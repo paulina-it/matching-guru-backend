@@ -53,13 +53,6 @@ public class CompatibilityMatrixBuilder {
     }
 
     private boolean isPotentiallyCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        return mentorshipValidator.isValid(mentor.getAcademicStage(), mentee.getAcademicStage()) &&
-                (
-                        (mentor.getCourse() != null && mentee.getCourse() != null &&
-                                mentor.getCourse().getId().equals(mentee.getCourse().getId()))
-                                ||
-                                (mentor.getCourseGroup() != null && mentee.getCourseGroup() != null &&
-                                        mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId()))
-                );
+        return mentorshipValidator.isCompatible(mentor, mentee, true);
     }
 }

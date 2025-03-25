@@ -32,7 +32,10 @@ public class CompatibilityService implements CompatibilityCalculator {
 
     @Override
     public double calculate(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, Map<String, Integer> weights) {
-        if (!mentorshipValidator.isValid(mentor.getAcademicStage(), mentee.getAcademicStage())) return 0;
+        boolean strictMatch = mentorshipValidator.isValid(mentor.getAcademicStage(), mentee.getAcademicStage());
+        boolean fallbackMatch = mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage());
+
+        if (!strictMatch && !fallbackMatch) return 0;
 
         String cacheKey = mentor.getId() + "-" + mentee.getId();
         if (compatibilityCache.containsKey(cacheKey)) {
