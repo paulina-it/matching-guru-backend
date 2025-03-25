@@ -63,4 +63,21 @@ public enum AcademicStage {
                 return this.name();
         }
     }
+
+    public int getLevel() {
+        switch (this) {
+            case FOUNDATION: return 0;
+            case FIRST_YEAR: return 1;
+            case SECOND_YEAR: return 2;
+            case SECOND_YEAR_P: return 2;
+            case PLACEMENT: return 3;
+            case FINAL_YEAR: return 4;
+            case FINAL_YEAR_P: return 4;
+            case PG_MASTERS: return 5;
+            case PG_PHD: return 6;
+            case GRADUATE: return 7;
+            default: return -1;
+        }
+    }
+
 }

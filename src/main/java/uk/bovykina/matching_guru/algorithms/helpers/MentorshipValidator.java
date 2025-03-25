@@ -20,17 +20,37 @@ public class MentorshipValidator {
         return validPairs.getOrDefault(menteeStage, List.of()).contains(mentorStage);
     }
 
+    public boolean isFallbackValid(AcademicStage mentorStage, AcademicStage menteeStage) {
+        return mentorStage.getLevel() > menteeStage.getLevel();
+    }
+
     public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        if (!isValid(mentor.getAcademicStage(), mentee.getAcademicStage())) {
+        return isCompatible(mentor, mentee, true);
+    }
+
+    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, boolean strictCourseGroup) {
+        if (!isValid(mentor.getAcademicStage(), mentee.getAcademicStage()) &&
+                !isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage())) {
             return false;
         }
 
-        if (mentor.getCourse() == null || mentee.getCourse() == null) return false;
-        if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) return true;
+        if (mentor.getCourse() == null || mentee.getCourse() == null) {
+            return false;
+        }
 
-        return mentor.getCourseGroup() != null &&
+        if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) {
+            return true;
+        }
+
+        boolean groupMatch = mentor.getCourseGroup() != null &&
                 mentee.getCourseGroup() != null &&
                 mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId());
-    }
 
+        if (!groupMatch && strictCourseGroup) {
+            System.out.println("❌ Course group mismatch: Mentee " + mentee.getId() + " / Mentor " + mentor.getId());
+            return false;
+        }
+
+        return !strictCourseGroup;
+    }
 }

@@ -49,7 +49,7 @@ public class MatchService {
 
         if (doesMatchExist(matchCreateDto.getMentorId(), matchCreateDto.getMenteeId())) {
             log.warn("⚠ Skipping duplicate match: Mentor {} → Mentee {}", matchCreateDto.getMentorId(), matchCreateDto.getMenteeId());
-            throw new IllegalStateException("Match already exists");
+            return null;
         }
 
         Match match = new Match();
