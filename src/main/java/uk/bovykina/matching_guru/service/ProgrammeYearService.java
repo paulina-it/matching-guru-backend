@@ -1,6 +1,7 @@
 package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.programme.MatchingCriteriaDto;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProgrammeYearService {
@@ -29,8 +31,19 @@ public class ProgrammeYearService {
 
     @Transactional
     public ProgrammeYearResponseDto createProgrammeYear(ProgrammeYearCreateDto createDto) {
+        log.info("📥 Creating ProgrammeYear for academicYear={}, programmeId={}, algorithm={}, approvalType={}, threshold={}",
+                createDto.getAcademicYear(),
+                createDto.getProgrammeId(),
+                createDto.getPreferredAlgorithm(),
+                createDto.getMatchApprovalType(),
+                createDto.getApprovalThreshold()
+        );
+
         Programme programme = programmeRepository.findById(createDto.getProgrammeId())
-                .orElseThrow(() -> new IllegalArgumentException("Programme not found"));
+                .orElseThrow(() -> {
+                    log.error("❌ Programme not found with ID: {}", createDto.getProgrammeId());
+                    return new IllegalArgumentException("Programme not found");
+                });
 
         ProgrammeYear programmeYear = new ProgrammeYear();
         programmeYear.setProgramme(programme);
@@ -41,32 +54,47 @@ public class ProgrammeYearService {
         programmeYear.generateFeedbackConfirmationCode();
 
         programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
+        log.info("🔧 Set matchApprovalType = {}", createDto.getMatchApprovalType());
+
         if (createDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
             if (createDto.getApprovalThreshold() == null || createDto.getApprovalThreshold() < 0 || createDto.getApprovalThreshold() > 100) {
+                log.error("❌ Invalid threshold value: {}", createDto.getApprovalThreshold());
                 throw new IllegalArgumentException("Approval threshold must be between 0 and 100 when using THRESHOLD mode.");
             }
             programmeYear.setApprovalThreshold(createDto.getApprovalThreshold());
+            log.info("✅ Set approvalThreshold = {}", createDto.getApprovalThreshold());
         } else {
             programmeYear.setApprovalThreshold(null);
+            log.info("➖ Approval type is not THRESHOLD; threshold cleared.");
         }
 
         ProgrammeYear savedProgrammeYear = programmeYearRepository.save(programmeYear);
+        log.info("💾 ProgrammeYear saved with ID = {}", savedProgrammeYear.getId());
 
         if (createDto.getMatchingCriteria() != null) {
+            log.info("📊 Saving {} matching criteria...", createDto.getMatchingCriteria().size());
             saveMatchingCriteria(savedProgrammeYear, createDto.getMatchingCriteria());
         }
 
         return toProgrammeYearResponseDto(savedProgrammeYear);
     }
 
-    public  ProgrammeYear getById(Long id) {
+    public ProgrammeYear getById(Long id) {
+        log.debug("🔍 Fetching ProgrammeYear by ID: {}", id);
         return programmeYearRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ProgrammeYear not found"));
+                .orElseThrow(() -> {
+                    log.error("❌ ProgrammeYear not found with ID: {}", id);
+                    return new RuntimeException("ProgrammeYear not found");
+                });
     }
 
     public ProgrammeYearResponseDto getProgrammeYear(Long id) {
+        log.info("📄 Getting full ProgrammeYearResponseDto for ID: {}", id);
         ProgrammeYear programmeYear = programmeYearRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Programme year not found"));
+                .orElseThrow(() -> {
+                    log.error("❌ Programme year not found: {}", id);
+                    return new IllegalArgumentException("Programme year not found");
+                });
 
         ProgrammeYearResponseDto responseDto = toProgrammeYearResponseDto(programmeYear);
         responseDto.setMatchingCriteria(
@@ -79,6 +107,7 @@ public class ProgrammeYearService {
     }
 
     public List<ProgrammeYearResponseDto> getAllProgrammeYears() {
+        log.info("📚 Fetching all programme years");
         return programmeYearRepository.findAll().stream()
                 .map(this::toProgrammeYearResponseDto)
                 .collect(Collectors.toList());
@@ -86,6 +115,7 @@ public class ProgrammeYearService {
 
     @Transactional(readOnly = true)
     public List<ProgrammeYearResponseDto> getAllProgrammeYearsByProgrammeId(Long programmeId) {
+        log.info("📚 Fetching all programme years for programme ID: {}", programmeId);
         return programmeYearRepository.findProgrammeYearByProgrammeId(programmeId).stream()
                 .map(this::toProgrammeYearResponseDto)
                 .collect(Collectors.toList());
@@ -93,8 +123,12 @@ public class ProgrammeYearService {
 
     @Transactional(readOnly = true)
     public List<MatchingCriteriaDto> getMatchingCriteriaByProgrammeYear(Long programmeYearId) {
+        log.info("📊 Fetching matching criteria for ProgrammeYear ID: {}", programmeYearId);
         ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
-                .orElseThrow(() -> new IllegalArgumentException("ProgrammeYear not found with ID: " + programmeYearId));
+                .orElseThrow(() -> {
+                    log.error("❌ ProgrammeYear not found with ID: {}", programmeYearId);
+                    return new IllegalArgumentException("ProgrammeYear not found with ID: " + programmeYearId);
+                });
 
         return matchingCriteriaRepository.findByProgrammeYearId(programmeYearId).stream()
                 .map(this::toMatchingCriteriaDto)
@@ -103,36 +137,64 @@ public class ProgrammeYearService {
 
     @Transactional
     public ProgrammeYearResponseDto updateProgrammeYear(Long id, ProgrammeYearUpdateDto updateDto) {
+        log.info("Update DTO: {}",updateDto);
+        log.info("✏️ Updating ProgrammeYear ID: {}", id);
         ProgrammeYear programmeYear = programmeYearRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Programme year not found"));
+                .orElseThrow(() -> {
+                    log.error("❌ Programme year not found: {}", id);
+                    return new IllegalArgumentException("Programme year not found");
+                });
 
         if (updateDto.getAcademicYear() != null) {
             programmeYear.setAcademicYear(updateDto.getAcademicYear());
+            log.info("🔄 Updated academicYear to {}", updateDto.getAcademicYear());
         }
         if (updateDto.getPreferredAlgorithm() != null) {
             programmeYear.setPreferredAlgorithm(updateDto.getPreferredAlgorithm());
+            log.info("🔄 Updated preferredAlgorithm to {}", updateDto.getPreferredAlgorithm());
         }
 
         programmeYear.setIsActive(updateDto.isActive());
+        log.info("🔄 Updated isActive to {}", updateDto.isActive());
 
         if (updateDto.getMatchApprovalType() != null) {
             programmeYear.setMatchApprovalType(updateDto.getMatchApprovalType());
+            log.info("🔄 Updated matchApprovalType to {}", updateDto.getMatchApprovalType());
+
             if (updateDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
                 if (updateDto.getApprovalThreshold() == null || updateDto.getApprovalThreshold() < 0 || updateDto.getApprovalThreshold() > 100) {
+                    log.error("❌ Invalid approvalThreshold: {}", updateDto.getApprovalThreshold());
                     throw new IllegalArgumentException("Approval threshold must be between 0 and 100 when using THRESHOLD mode.");
                 }
                 programmeYear.setApprovalThreshold(updateDto.getApprovalThreshold());
+                log.info("✅ Set approvalThreshold to {}", updateDto.getApprovalThreshold());
             } else {
                 programmeYear.setApprovalThreshold(null);
+                log.info("➖ Threshold cleared since approvalType is not THRESHOLD");
             }
         }
 
         if (updateDto.getMatchingCriteria() != null) {
+            log.info("📊 Updating {} matching criteria", updateDto.getMatchingCriteria().size());
             saveMatchingCriteria(programmeYear, updateDto.getMatchingCriteria());
         }
 
         ProgrammeYear updatedProgrammeYear = programmeYearRepository.save(programmeYear);
+        log.info("💾 ProgrammeYear updated with ID = {}", updatedProgrammeYear.getId());
+
         return toProgrammeYearResponseDto(updatedProgrammeYear);
+    }
+
+    @Transactional
+    public void deleteProgrammeYear(Long id) {
+        log.warn("🗑️ Deleting ProgrammeYear ID: {}", id);
+        ProgrammeYear programmeYear = programmeYearRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("❌ Cannot delete. Programme year not found: {}", id);
+                    return new IllegalArgumentException("Programme year not found");
+                });
+        programmeYearRepository.delete(programmeYear);
+        log.info("✅ ProgrammeYear deleted successfully");
     }
 
     private void saveMatchingCriteria(ProgrammeYear programmeYear, List<MatchingCriteriaDto> criteriaDtos) {
@@ -141,10 +203,12 @@ public class ProgrammeYearService {
                 .sum();
 
         if (totalWeight != 100) {
+            log.error("❌ Total weight is {}%, must be 100%", totalWeight);
             throw new IllegalArgumentException("The total weight of all criteria must equal 100%");
         }
 
         matchingCriteriaRepository.deleteByProgrammeYearId(programmeYear.getId());
+        log.info("🧹 Deleted existing matching criteria for ProgrammeYear ID: {}", programmeYear.getId());
 
         List<ProgrammeMatchingCriteria> criteria = criteriaDtos.stream()
                 .map(dto -> {
@@ -157,6 +221,7 @@ public class ProgrammeYearService {
                 .collect(Collectors.toList());
 
         matchingCriteriaRepository.saveAll(criteria);
+        log.info("✅ Saved {} new matching criteria", criteria.size());
     }
 
     private ProgrammeYearResponseDto toProgrammeYearResponseDto(ProgrammeYear programmeYear) {
@@ -191,14 +256,8 @@ public class ProgrammeYearService {
     }
 
     private String generateJoinCode() {
-        return UUID.randomUUID().toString().substring(0, 8);
+        String code = UUID.randomUUID().toString().substring(0, 8);
+        log.debug("🔐 Generated join code: {}", code);
+        return code;
     }
-
-    @Transactional
-    public void deleteProgrammeYear(Long id) {
-        ProgrammeYear programmeYear = programmeYearRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Programme year not found"));
-        programmeYearRepository.delete(programmeYear);
-    }
-
 }
