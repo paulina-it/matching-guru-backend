@@ -20,6 +20,7 @@ public class ParticipantResponseDto {
     private String userHomeCountry;
     private PersonalityType userPersonalityType;
     private Long userCourseId;
+    private String userCourseName;
     private LivingArrangement userLivingArrangement;
     private String userDisability;
     private Boolean userDbsCertificate;
