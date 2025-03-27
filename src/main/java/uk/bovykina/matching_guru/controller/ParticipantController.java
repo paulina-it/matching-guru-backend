@@ -124,6 +124,13 @@ public class ParticipantController {
         return ResponseEntity.ok(participants);
     }
 
+    @GetMapping("/programme-year/detailed/{programmeYearId}")
+    public ResponseEntity<List<ParticipantResponseDto>> getDetailedParticipantsByProgrammeYearId(
+            @PathVariable Long programmeYearId
+    ) {
+        List<ParticipantResponseDto> participants = participantService.getDetailedParticipantsByProgrammeYearId(programmeYearId);
+        return ResponseEntity.ok(participants);
+    }
 
 
 //    @DeleteMapping("/{id}")

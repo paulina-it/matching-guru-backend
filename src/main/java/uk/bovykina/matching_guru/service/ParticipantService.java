@@ -174,6 +174,17 @@ public class ParticipantService {
         return participantPage.map(this::toParticipantResponseDto);
     }
 
+    public List<ParticipantResponseDto> getDetailedParticipantsByProgrammeYearId(Long programmeYearId) {
+        ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
+                .orElseThrow(() -> new IllegalArgumentException("Programme year not found"));
+
+        List<ParticipantInProgrammeYear> participants = participantRepository.findByProgrammeYearId(programmeYearId);
+
+        return participants.stream()
+                .map(this::toParticipantResponseDto)
+                .collect(Collectors.toList());
+    }
+
 
     private ParticipantResponseDto toParticipantResponseDto(ParticipantInProgrammeYear participant) {
         ParticipantResponseDto dto = new ParticipantResponseDto();
@@ -188,6 +199,7 @@ public class ParticipantService {
         dto.setUserNationality(user.getNationality());
         dto.setUserPersonalityType(user.getPersonalityType());
         dto.setUserCourseId(user.getCourse() != null ? user.getCourse().getId() : null);
+        dto.setUserCourseName(user.getCourse().getName());
         dto.setUserLivingArrangement(user.getLivingArrangement());
         dto.setUserDbsCertificate(user.getDbsCertificate());
         dto.setUserDisability(user.getDisability());
