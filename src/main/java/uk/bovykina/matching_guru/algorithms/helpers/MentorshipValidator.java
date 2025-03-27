@@ -24,13 +24,14 @@ public class MentorshipValidator {
         return mentorStage.getLevel() > menteeStage.getLevel();
     }
 
-    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        return isCompatible(mentor, mentee, true);
-    }
+    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee,
+                                boolean strictStage, boolean strictCourseGroup) {
+        boolean validStage = strictStage
+                ? isValid(mentor.getAcademicStage(), mentee.getAcademicStage())
+                : isValid(mentor.getAcademicStage(), mentee.getAcademicStage()) ||
+                isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage());
 
-    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, boolean strictCourseGroup) {
-        if (!isValid(mentor.getAcademicStage(), mentee.getAcademicStage()) &&
-                !isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage())) {
+        if (!validStage) {
             return false;
         }
 
@@ -46,11 +47,21 @@ public class MentorshipValidator {
                 mentee.getCourseGroup() != null &&
                 mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId());
 
-        if (!groupMatch && strictCourseGroup) {
-            System.out.println("❌ Course group mismatch: Mentee " + mentee.getId() + " / Mentor " + mentor.getId());
-            return false;
+        if (strictCourseGroup) {
+            if (!groupMatch) {
+                System.out.println("❌ Course group mismatch: Mentee " + mentee.getId() + " / Mentor " + mentor.getId());
+            }
+            return groupMatch;
         }
 
-        return !strictCourseGroup;
+        return true;
+    }
+
+    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
+        return isCompatible(mentor, mentee, true, true);
+    }
+
+    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, boolean strictCourseGroup) {
+        return isCompatible(mentor, mentee, true, strictCourseGroup);
     }
 }

@@ -25,7 +25,9 @@ public class CompatibilityMatrixBuilder {
     public Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> build(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
-            Long programmeYearId
+            Long programmeYearId,
+            boolean strictStage,
+            boolean strictGroup
     ) {
         Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> scores = new HashMap<>();
         Map<String, Integer> weights = loadWeights(programmeYearId);
@@ -33,7 +35,7 @@ public class CompatibilityMatrixBuilder {
         for (ParticipantInProgrammeYear mentor : mentors) {
             Map<ParticipantInProgrammeYear, Double> mentorScores = new HashMap<>();
             for (ParticipantInProgrammeYear mentee : mentees) {
-                if (!isPotentiallyCompatible(mentor, mentee)) continue;
+                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictGroup)) continue;
 
                 double score = compatibilityCalculator.calculate(mentor, mentee, weights);
                 if (score > 0) mentorScores.put(mentee, score);
@@ -50,9 +52,5 @@ public class CompatibilityMatrixBuilder {
                         c -> c.getCriterionType().name(),
                         ProgrammeMatchingCriteria::getWeight
                 ));
-    }
-
-    private boolean isPotentiallyCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        return mentorshipValidator.isCompatible(mentor, mentee, true);
     }
 }

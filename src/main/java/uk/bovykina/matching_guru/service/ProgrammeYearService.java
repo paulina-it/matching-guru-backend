@@ -52,6 +52,8 @@ public class ProgrammeYearService {
         programmeYear.setJoinCode(generateJoinCode());
         programmeYear.setPreferredAlgorithm(createDto.getPreferredAlgorithm());
         programmeYear.generateFeedbackConfirmationCode();
+        programmeYear.setStrictAcademicStage(createDto.getStrictAcademicStage());
+        programmeYear.setStrictCourseGroup(createDto.getStrictCourseGroup());
 
         programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
         log.info("🔧 Set matchApprovalType = {}", createDto.getMatchApprovalType());
@@ -154,6 +156,16 @@ public class ProgrammeYearService {
             log.info("🔄 Updated preferredAlgorithm to {}", updateDto.getPreferredAlgorithm());
         }
 
+        if (updateDto.getStrictAcademicStage() != null) {
+            programmeYear.setStrictAcademicStage(updateDto.getStrictAcademicStage());
+            log.info("🔄 Updated strictAcademicStage to {}", updateDto.getStrictAcademicStage());
+        }
+
+        if (updateDto.getStrictCourseGroup() != null) {
+            programmeYear.setStrictCourseGroup(updateDto.getStrictCourseGroup());
+            log.info("🔄 Updated strictCourseGroup to {}", updateDto.getStrictCourseGroup());
+        }
+
         programmeYear.setIsActive(updateDto.isActive());
         log.info("🔄 Updated isActive to {}", updateDto.isActive());
 
@@ -235,6 +247,8 @@ public class ProgrammeYearService {
         dto.setPreferredAlgorithm(programmeYear.getPreferredAlgorithm());
         dto.setMatchApprovalType(programmeYear.getMatchApprovalType());
         dto.setApprovalThreshold(programmeYear.getApprovalThreshold());
+        dto.setStrictAcademicStage(programmeYear.getStrictAcademicStage());
+        dto.setStrictCourseGroup(programmeYear.getStrictCourseGroup());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

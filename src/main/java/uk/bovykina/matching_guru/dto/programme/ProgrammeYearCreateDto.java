@@ -16,4 +16,6 @@ public class ProgrammeYearCreateDto {
     private List<MatchingCriteriaDto> matchingCriteria;
     private MatchApprovalType matchApprovalType;
     private Integer approvalThreshold;
+    private Boolean strictAcademicStage;
+    private Boolean strictCourseGroup;
 }

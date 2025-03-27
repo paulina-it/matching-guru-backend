@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -16,15 +17,16 @@ import java.util.*;
 public class MatchAssigner {
     private static final double MIN_SCORE = 0;
     private static final double FALLBACK_SCORE = 0;
+
     private final MentorshipValidator mentorshipValidator;
 
     Map<ParticipantInProgrammeYear, List<Map.Entry<ParticipantInProgrammeYear, Double>>> topMentors = new HashMap<>();
 
-
     public Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> assignMatches(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
-            Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> scores
+            Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> scores,
+            ProgrammeYear programmeYear
     ) {
         Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches = new HashMap<>();
         Map<ParticipantInProgrammeYear, Integer> mentorLoad = new HashMap<>();
@@ -35,7 +37,6 @@ public class MatchAssigner {
                 (int) mentors.stream().filter(mentor -> scores.getOrDefault(mentor, Map.of()).containsKey(mentee)).count()
         ));
 
-
         long menteesWithAtLeastOneMentor = mentees.stream()
                 .filter(mentee ->
                         mentors.stream().anyMatch(mentor ->
@@ -45,13 +46,13 @@ public class MatchAssigner {
 
         log.info("🧠 {} out of {} mentees have at least one compatible mentor", menteesWithAtLeastOneMentor, mentees.size());
 
-        match(mentees, mentors, scores, matches, mentorLoad, MIN_SCORE, false);
+        match(mentees, mentors, scores, matches, mentorLoad, programmeYear, MIN_SCORE, false);
 
         List<ParticipantInProgrammeYear> unmatched = mentees.stream()
                 .filter(m -> !matches.containsKey(m))
                 .toList();
 
-        match(unmatched, mentors, scores, matches, mentorLoad, FALLBACK_SCORE, true);
+        match(unmatched, mentors, scores, matches, mentorLoad, programmeYear, FALLBACK_SCORE, true);
 
         long fullMentors = mentorLoad.entrySet().stream()
                 .filter(e -> e.getValue() >= (e.getKey().getMenteesNumber() != null ? e.getKey().getMenteesNumber() : 1))
@@ -74,7 +75,6 @@ public class MatchAssigner {
                     long compatibleCount = mentors.stream()
                             .filter(mentor -> scores.getOrDefault(mentor, Map.of()).getOrDefault(mentee, 0.0) > 0)
                             .count();
-
                     out.printf("%d,%d%n", mentee.getId(), compatibleCount);
                 }
             }
@@ -93,9 +93,14 @@ public class MatchAssigner {
                        Map<ParticipantInProgrammeYear, Map<ParticipantInProgrammeYear, Double>> scores,
                        Map<ParticipantInProgrammeYear, ParticipantInProgrammeYear> matches,
                        Map<ParticipantInProgrammeYear, Integer> mentorLoad,
+                       ProgrammeYear programmeYear,
                        double minScore,
                        boolean isFallbackPhase) {
+
         topMentors.clear();
+
+        boolean strictStage = !isFallbackPhase && Boolean.TRUE.equals(programmeYear.getStrictAcademicStage());
+        boolean strictCourseGroup = !isFallbackPhase && Boolean.TRUE.equals(programmeYear.getStrictCourseGroup());
 
         for (ParticipantInProgrammeYear mentee : mentees) {
             ParticipantInProgrammeYear bestMentor = null;
@@ -105,10 +110,12 @@ public class MatchAssigner {
             Collections.shuffle(shuffledMentors);
 
             for (ParticipantInProgrammeYear mentor : shuffledMentors) {
+                if (mentee.getUser().getId().equals(mentor.getUser().getId())) continue;
+
                 int allowed = mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1;
                 if (mentorLoad.getOrDefault(mentor, 0) >= allowed) continue;
 
-                if (!mentorshipValidator.isCompatible(mentor, mentee, true)) continue;
+                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictCourseGroup)) continue;
 
                 double score = scores.getOrDefault(mentor, Map.of()).getOrDefault(mentee, 0.0);
                 if (score >= minScore) {
@@ -144,5 +151,4 @@ public class MatchAssigner {
             }
         }
     }
-
 }

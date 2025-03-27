@@ -72,6 +72,7 @@ public class GaleShapleyService {
             mentorLoad.put(mentor, 0);
 
             List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream().filter(mentee -> {
+                        if (mentor.getUser().getId().equals(mentee.getUser().getId())) return false;
                         if (!mentorshipValidator.isCompatible(mentor, mentee, true)) return false;
                         return compatibilityService.calculate(mentor, mentee, weights) > 0;
                     })
@@ -129,17 +130,22 @@ public class GaleShapleyService {
                 .toList();
 
         for (ParticipantInProgrammeYear mentee : unmatchedMentees) {
-            mentors.stream()
+            Optional<ParticipantInProgrammeYear> bestFallbackMentor = mentors.stream()
+                    .filter(mentor -> !mentor.getUser().getId().equals(mentee.getUser().getId()))
                     .filter(mentor -> mentorLoad.getOrDefault(mentor, 0) < (mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1))
-                    .filter(mentor -> mentorshipValidator.isCompatible(mentor, mentee, true)) // ✅ enforce course group here
-                    .sorted(Comparator.comparingDouble(m -> -compatibilityService.calculate(m, mentee, weights)))
-                    .limit(3)
-                    .forEach(mentor -> {
-                        matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
-                        mentorLoad.put(mentor, mentorLoad.getOrDefault(mentor, 0) + 1);
-                        double score = compatibilityService.calculate(mentor, mentee, weights);
-                        log.info("🟡 Fallback match (reverse): Mentee {} → Mentor {} (score = {})", mentee.getId(), mentor.getId(), score);
-                    });
+                    .filter(mentor -> mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage()))
+                    .filter(mentor -> mentor.getCourseGroup() != null && mentee.getCourseGroup() != null &&
+                            mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId()))
+                    .sorted(Comparator.comparingDouble((ParticipantInProgrammeYear mentor) ->
+                            -compatibilityService.calculate(mentor, mentee, weights)))
+                    .findFirst();
+
+            bestFallbackMentor.ifPresent(mentor -> {
+                matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
+                mentorLoad.put(mentor, mentorLoad.getOrDefault(mentor, 0) + 1);
+                double score = compatibilityService.calculate(mentor, mentee, weights);
+                log.info("🟡 Fallback match: Mentee {} → Mentor {} (score = {})", mentee.getId(), mentor.getId(), score);
+            });
         }
 
 

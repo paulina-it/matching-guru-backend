@@ -24,4 +24,6 @@ public class ProgrammeYearResponseDto {
     private MatchApprovalType matchApprovalType;
     private Integer approvalThreshold;
     private Integer unmatchedCount;
+    private Boolean strictAcademicStage;
+    private Boolean strictCourseGroup;
 }

@@ -26,6 +26,8 @@ public class ProgrammeYear extends BaseEntity {
     private Boolean isActive;
     private String joinCode;
     private String feedbackConfirmationCode;
+    private Boolean strictAcademicStage;
+    private Boolean strictCourseGroup;
 
     @ManyToOne
     @JoinColumn(name = "programme_id")
