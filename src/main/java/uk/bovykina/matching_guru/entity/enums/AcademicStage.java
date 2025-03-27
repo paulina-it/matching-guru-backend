@@ -66,6 +66,7 @@ public enum AcademicStage {
 
     public int getLevel() {
         switch (this) {
+            case INCOMING: return 0;
             case FOUNDATION: return 0;
             case FIRST_YEAR: return 1;
             case SECOND_YEAR: return 2;
