@@ -76,17 +76,22 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
     int countByProgrammeYearIdAndIsMatchedTrue(@Param("programmeYearId") Long programmeYearId);
 
     @Query("""
-    SELECT COUNT(p.id) AS count, py.academicYear AS programmeYearName, MAX(p.createdAt) AS timestamp
+    SELECT py.id AS programmeYearId,
+           py.programme.id AS programmeId,
+           py.academicYear AS programmeYearName,
+           COUNT(p.id) AS count,
+           MAX(p.createdAt) AS timestamp
     FROM ParticipantInProgrammeYear p
     JOIN p.programmeYear py
     WHERE py.programme.organisation.id = :organisationId
       AND p.createdAt > :since
-    GROUP BY py.academicYear
+    GROUP BY py.id, py.programme.id, py.academicYear
     ORDER BY count DESC
 """)
     List<ActivityJoinProjection> findRecentJoinsByOrganisationId(
             @Param("organisationId") Long organisationId,
             @Param("since") LocalDateTime since);
+
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole role, boolean isMatched);
 }

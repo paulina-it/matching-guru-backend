@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 
+    @Query("SELECT COUNT(m) FROM Match m WHERE m.programmeYear.id = :programmeYearId AND m.status = 'PENDING'")
+    int countPendingMatches(@Param("programmeYearId") Long programmeYearId);
 
     @EntityGraph(attributePaths = {"mentor", "mentee", "programmeYear"})
     Page<Match> findByProgrammeYearId(Long programmeYearId, Pageable pageable);

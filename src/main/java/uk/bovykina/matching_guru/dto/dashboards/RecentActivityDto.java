@@ -10,4 +10,5 @@ import java.time.LocalDateTime;
 public class RecentActivityDto {
     private String description;
     private LocalDateTime timestamp;
+    private String link;
 }
