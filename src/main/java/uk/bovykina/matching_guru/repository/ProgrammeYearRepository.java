@@ -1,6 +1,8 @@
 package uk.bovykina.matching_guru.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 
@@ -12,4 +14,6 @@ public interface ProgrammeYearRepository extends JpaRepository<ProgrammeYear, Lo
     Optional<ProgrammeYear> findProgrammeYearById(Long id);
     List<ProgrammeYear> findProgrammeYearByProgrammeId(Long programmeId);
 
+    @Query("SELECT py FROM ProgrammeYear py WHERE py.programme.organisation.id = :orgId AND py.isActive = true")
+    List<ProgrammeYear> findByProgrammeOrganisationIdAndIsActiveTrue(@Param("orgId") Long organisationId);
 }

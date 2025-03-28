@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import uk.bovykina.matching_guru.dto.dashboards.ActivityJoinProjection;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,6 +71,22 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
             ParticipantRole role,
             Pageable pageable
     );
+
+    @Query("SELECT COUNT(p) FROM ParticipantInProgrammeYear p WHERE p.programmeYear.id = :programmeYearId AND p.isMatched = true")
+    int countByProgrammeYearIdAndIsMatchedTrue(@Param("programmeYearId") Long programmeYearId);
+
+    @Query("""
+    SELECT COUNT(p.id) AS count, py.academicYear AS programmeYearName, MAX(p.createdAt) AS timestamp
+    FROM ParticipantInProgrammeYear p
+    JOIN p.programmeYear py
+    WHERE py.programme.organisation.id = :organisationId
+      AND p.createdAt > :since
+    GROUP BY py.academicYear
+    ORDER BY count DESC
+""")
+    List<ActivityJoinProjection> findRecentJoinsByOrganisationId(
+            @Param("organisationId") Long organisationId,
+            @Param("since") LocalDateTime since);
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole role, boolean isMatched);
 }
