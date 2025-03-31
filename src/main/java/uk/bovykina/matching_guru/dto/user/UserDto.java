@@ -2,6 +2,7 @@ package uk.bovykina.matching_guru.dto.user;
 
 import lombok.Data;
 import lombok.Getter;
+import uk.bovykina.matching_guru.entity.Course;
 import uk.bovykina.matching_guru.entity.enums.*;
 
 @Data
@@ -24,4 +25,5 @@ public class UserDto {
     private String disability;
     private String profileImageUrl;
     private AgeGroup ageGroup;
+    private Course course;
 }

@@ -19,6 +19,8 @@ public class UserResponseDto {
     private UserRole role;
     private Long organisationId;
     private String organisationName;
+    private Long courseId;
+    private String courseName;
     private PersonalityType personalityType;
     private Gender gender;
     private Integer age;

@@ -18,7 +18,9 @@ import uk.bovykina.matching_guru.entity.Organisation;
 import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.entity.enums.UserRole;
 import uk.bovykina.matching_guru.exception.UserNotFoundException;
+import uk.bovykina.matching_guru.mapper.UserMapper;
 import uk.bovykina.matching_guru.repository.AuthRepository;
+import uk.bovykina.matching_guru.repository.CourseRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.UserRepository;
 import uk.bovykina.matching_guru.util.CloudinaryService;
@@ -42,8 +44,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtService;
     private final CloudinaryService cloudinaryService;
-    private final UserMapper userMapper = new UserMapper();
-
+    private final UserMapper userMapper;
 
     /**
      * Uploads a profile image and returns the image URL.
@@ -230,96 +231,5 @@ public class UserService {
         auth.setPasswordHash(passwordEncoder.encode(newPassword));
         authRepository.save(auth);
         log.info("✅ Password reset successful for user ID: {}", userId);
-    }
-
-
-    private static class UserMapper {
-        private static final Logger log = LoggerFactory.getLogger(UserMapper.class);
-
-        User toUser(UserCreateDto userCreateDto) {
-            log.info("Mapping UserCreateDto to User entity for email: {}", userCreateDto.getEmail());
-            User user = new User();
-            user.setFirstName(userCreateDto.getFirstName());
-            user.setLastName(userCreateDto.getLastName());
-            user.setEmail(userCreateDto.getEmail());
-            user.setUniEmail(userCreateDto.getUniEmail());
-            user.setStudentNumber(userCreateDto.getStudentNumber());
-            user.setRole(userCreateDto.getRole());
-            user.setPersonalityType(userCreateDto.getPersonalityType());
-            user.setGender(userCreateDto.getGender());
-            user.setEthnicity(userCreateDto.getEthnicity());
-            user.setAgeGroup(userCreateDto.getAgeGroup());
-            user.setHomeCountry(userCreateDto.getHomeCountry());
-            user.setLivingArrangement(userCreateDto.getLivingArrangement());
-            user.setDisability(userCreateDto.getDisability());
-            user.setProfileImageUrl(userCreateDto.getProfileImageUrl());
-            log.info("Successfully mapped UserCreateDto to User entity for email: {}", userCreateDto.getEmail());
-            return user;
-        }
-
-        UserDto toUserDto(User user) {
-            log.info("Converting User entity to UserDto for user ID: {}", user.getId());
-            UserDto userDto = new UserDto();
-            userDto.setId(user.getId());
-            userDto.setFirstName(user.getFirstName());
-            userDto.setLastName(user.getLastName());
-            userDto.setEmail(user.getEmail());
-            userDto.setUniEmail(user.getUniEmail());
-            userDto.setStudentNumber(user.getStudentNumber());
-            userDto.setRole(user.getRole());
-            userDto.setPersonalityType(user.getPersonalityType());
-            userDto.setGender(user.getGender());
-            userDto.setEthnicity(user.getEthnicity());
-            userDto.setAgeGroup(user.getAgeGroup());
-            userDto.setHomeCountry(user.getHomeCountry());
-            userDto.setLivingArrangement(user.getLivingArrangement());
-            userDto.setDisability(user.getDisability());
-            userDto.setProfileImageUrl(user.getProfileImageUrl());
-            log.info("Successfully converted User entity to UserDto for user ID: {}", user.getId());
-            return userDto;
-        }
-
-        UserResponseDto toUserResponseDto(User user) {
-            log.info("Transforming User entity to UserResponseDto for user ID: {}", user.getId());
-
-            UserResponseDto userDto = new UserResponseDto();
-            userDto.setId(user.getId());
-            userDto.setFirstName(user.getFirstName());
-            userDto.setLastName(user.getLastName());
-            userDto.setEmail(user.getEmail());
-            userDto.setUniEmail(user.getUniEmail());
-            userDto.setStudentNumber(user.getStudentNumber());
-            userDto.setRole(user.getRole());
-            userDto.setPersonalityType(user.getPersonalityType());
-            userDto.setGender(user.getGender());
-            userDto.setEthnicity(user.getEthnicity());
-            userDto.setAgeGroup(user.getAgeGroup());
-            userDto.setHomeCountry(user.getHomeCountry());
-            userDto.setLivingArrangement(user.getLivingArrangement());
-            userDto.setDisability(user.getDisability());
-            userDto.setProfileImageUrl(user.getProfileImageUrl());
-
-            if (user.getOrganisation() != null) {
-                userDto.setOrganisationId(user.getOrganisation().getId());
-                userDto.setOrganisationName(user.getOrganisation().getName());
-                log.info("User ID: {} belongs to Organisation ID: {}", user.getId(), user.getOrganisation().getId());
-            }
-
-            if (user.getParticipations() != null) {
-                userDto.setParticipations(
-                        user.getParticipations().stream()
-                                .map(part -> new UserParticipationDto(
-                                        part.getProgrammeYear().getAcademicYear(),
-                                        part.getRole()
-                                ))
-                                .collect(Collectors.toList())
-                );
-            } else {
-                userDto.setParticipations(new ArrayList<>());
-            }
-
-            log.info("Successfully transformed User entity to UserResponseDto for user ID: {}", user.getId());
-            return userDto;
-        }
     }
 }

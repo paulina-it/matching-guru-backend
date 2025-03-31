@@ -53,4 +53,5 @@ public class UserCreateDto {
     private String disability;
     private String profileImageUrl;
     private AgeGroup ageGroup;
+    private Long courseId;
 }

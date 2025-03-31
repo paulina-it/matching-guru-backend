@@ -28,6 +28,7 @@ public class UserUpdateDto {
     private String ethnicity;
     private String nationality;
     private String homeCountry;
+    private Long courseId;
 
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     private LivingArrangement livingArrangement;
