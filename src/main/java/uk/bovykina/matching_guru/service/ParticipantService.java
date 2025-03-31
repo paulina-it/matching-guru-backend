@@ -226,6 +226,28 @@ public class ParticipantService {
         return dto;
     }
 
+    public Object getParticipantInfoByUserIdAndProgrammeYearId(Long userId, Long programmeYearId) {
+        log.info("Fetching participant info for userId={} and programmeYearId={}", userId, programmeYearId);
+
+        ParticipantInProgrammeYear participant = participantRepository
+                .findByUserIdAndProgrammeYearId(userId, programmeYearId)
+                .orElseThrow(() -> {
+                    log.error("Participant not found for userId={} and programmeYearId={}", userId, programmeYearId);
+                    return new IllegalArgumentException("Participant not found");
+                });
+
+        Optional<Match> match = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        log.info("🔍 Match check for participantId {}: {}", participant.getId(), match);
+
+        if (match.isPresent()) {
+            log.info("✅ Match found, returning detailed match DTO");
+            return matchService.getDetailedMatchById(match.get().getId());
+        } else {
+            log.info("❌ No match found, returning participant response DTO");
+            return toParticipantResponseDto(participant);
+        }
+    }
+
 
     private void updateUserFields(User user, ParticipantCreateDto createDto) {
         boolean updated = false;
@@ -254,7 +276,8 @@ public class ParticipantService {
             updated = true;
         }
 
-        if (createDto.getPersonalityType() != null && user.getPersonalityType() == null) {
+        if (createDto.getPersonalityType() != null &&
+                !createDto.getPersonalityType().equals(user.getPersonalityType())) {
             log.info("Updating User ID {} Personality Type: {}", user.getId(), createDto.getPersonalityType());
             user.setPersonalityType(createDto.getPersonalityType());
             updated = true;

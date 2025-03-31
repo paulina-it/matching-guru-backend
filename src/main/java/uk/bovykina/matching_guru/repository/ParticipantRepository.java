@@ -92,6 +92,7 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
             @Param("organisationId") Long organisationId,
             @Param("since") LocalDateTime since);
 
+    Optional<ParticipantInProgrammeYear> findByUserIdAndProgrammeYearId(Long userId, Long programmeYearId);
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole role, boolean isMatched);
 }

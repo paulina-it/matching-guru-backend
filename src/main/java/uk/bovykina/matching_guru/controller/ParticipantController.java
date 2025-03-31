@@ -132,6 +132,20 @@ public class ParticipantController {
         return ResponseEntity.ok(participants);
     }
 
+    @GetMapping("/info/{userId}/programmeYear/{programmeYearId}")
+    public ResponseEntity<?> getParticipantInfoByUserIdAndProgrammeYearId(
+            @PathVariable Long userId,
+            @PathVariable Long programmeYearId
+    ) {
+        try {
+            Object participantInfo = participantService.getParticipantInfoByUserIdAndProgrammeYearId(userId, programmeYearId);
+            return ResponseEntity.ok(participantInfo);
+        } catch (Exception e) {
+            log.error("Error fetching participant info", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch participant info");
+        }
+    }
+
 
 //    @DeleteMapping("/{id}")
 //    public ResponseEntity<?> deleteParticipant(@PathVariable Long id) {
