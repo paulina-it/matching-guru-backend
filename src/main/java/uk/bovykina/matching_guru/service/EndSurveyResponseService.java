@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import uk.bovykina.matching_guru.dto.participant.FeedbackSubmissionDto;
 import uk.bovykina.matching_guru.dto.survey.*;
 import uk.bovykina.matching_guru.entity.EndSurveyResponse;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
@@ -28,33 +29,30 @@ public class EndSurveyResponseService {
     private final ProgrammeYearRepository programmeYearRepository;
     private final EndSurveyMapper endSurveyMapper = new EndSurveyMapper();
 
-    public EndSurveyResponseDto createEndSurveyResponse(EndSurveyResponseCreateDto dto, String feedbackConfirmationCode) {
-        log.info("Processing end survey response for participant ID: {}", dto.getParticipantId());
+    @Transactional
+    public void handleFeedbackSubmission(FeedbackSubmissionDto dto) {
+        log.info("📝 Handling feedback for userId={} in programmeYearId={}", dto.getUserId(), dto.getProgrammeYearId());
 
-        ParticipantInProgrammeYear participant = participantRepository.findById(dto.getParticipantId())
-                .orElseThrow(() -> {
-                    log.error("Participant not found with ID: {}", dto.getParticipantId());
-                    return new IllegalArgumentException("Participant not found");
-                });
+        ProgrammeYear programmeYear = programmeYearRepository.findById(dto.getProgrammeYearId())
+                .orElseThrow(() -> new IllegalArgumentException("Programme year not found."));
 
-        ProgrammeYear programmeYear = programmeYearRepository.findById(participant.getProgrammeYear().getId())
-                .orElseThrow(() -> {
-                    log.error("Programme year not found for participant: {}", dto.getParticipantId());
-                    return new IllegalArgumentException("Programme year not found");
-                });
-
-        if (!programmeYear.getFeedbackConfirmationCode().equals(feedbackConfirmationCode)) {
-            log.warn("Invalid feedback confirmation code provided: {}", feedbackConfirmationCode);
-            throw new IllegalArgumentException("Invalid feedback confirmation code.");
+        if (!dto.getCode().equals(programmeYear.getFeedbackConfirmationCode())) {
+            log.warn("❌ Invalid feedback code: received {}, expected {}", dto.getCode(), programmeYear.getFeedbackConfirmationCode());
+            throw new IllegalArgumentException("Invalid confirmation code.");
         }
 
-        EndSurveyResponse surveyResponse = endSurveyMapper.toEntity(dto, participant);
-        surveyResponse.setCompletedAt(LocalDateTime.now());
-        surveyResponse.setFeedbackConfirmationCode(feedbackConfirmationCode);
-        surveyResponse = endSurveyResponseRepository.save(surveyResponse);
+        ParticipantInProgrammeYear participant = participantRepository
+                .findByUserIdAndProgrammeYearId(dto.getUserId(), dto.getProgrammeYearId())
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found."));
 
-        log.info("Successfully processed end survey response for participant ID: {}", dto.getParticipantId());
-        return endSurveyMapper.toDto(surveyResponse);
+        EndSurveyResponse response = new EndSurveyResponse();
+        response.setParticipantInProgramme(participant);
+        response.setCompletedAt(LocalDateTime.now());
+        response.setFeedbackConfirmationCode(dto.getCode());
+        response.setResponseData(dto.getResponseData());
+
+        endSurveyResponseRepository.save(response);
+        log.info("✅ Feedback saved for participantId={}", participant.getId());
     }
 
     public List<EndSurveyResponseDto> getResponsesByParticipant(Long participantId) {

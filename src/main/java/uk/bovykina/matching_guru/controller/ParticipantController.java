@@ -7,11 +7,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import uk.bovykina.matching_guru.dto.participant.FeedbackSubmissionDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantCreateDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
+import uk.bovykina.matching_guru.entity.EndSurveyResponse;
+import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.service.EndSurveyResponseService;
 import uk.bovykina.matching_guru.service.ParticipantService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -21,6 +27,7 @@ import java.util.List;
 public class ParticipantController {
 
     private final ParticipantService participantService;
+    private final EndSurveyResponseService endSurveyResponseService;
 
     @PostMapping("/create")
     public ResponseEntity<?> createParticipant(@Valid @RequestBody ParticipantCreateDto participantCreateDto) {
@@ -155,7 +162,18 @@ public class ParticipantController {
         }
     }
 
-
+    @PostMapping("/feedback")
+    public ResponseEntity<?> submitFeedback(@RequestBody FeedbackSubmissionDto dto) {
+        try {
+            endSurveyResponseService.handleFeedbackSubmission(dto);
+            return ResponseEntity.ok("Feedback recorded.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("❌ Error during feedback submission", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to submit feedback.");
+        }
+    }
 
 //    @DeleteMapping("/{id}")
 //    public ResponseEntity<?> deleteParticipant(@PathVariable Long id) {
