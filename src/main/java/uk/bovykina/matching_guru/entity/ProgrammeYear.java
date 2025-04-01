@@ -8,6 +8,7 @@ import lombok.ToString;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,10 +23,14 @@ public class ProgrammeYear extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+//    private LocalDateTime startDate;
+//    private LocalDateTime endDate;
     private String academicYear;
     private Boolean isActive;
     private String joinCode;
     private String feedbackConfirmationCode;
+    private LocalDateTime surveyOpenDate;
+    private LocalDateTime surveyCloseDate;
     private Boolean strictAcademicStage;
     private Boolean strictCourseGroup;
 
@@ -61,4 +66,12 @@ public class ProgrammeYear extends BaseEntity {
         this.feedbackConfirmationCode = UUID.randomUUID().toString();
         return this.feedbackConfirmationCode;
     }
+
+    public boolean isSurveyOpen() {
+        LocalDateTime now = LocalDateTime.now();
+        return surveyOpenDate != null && surveyCloseDate != null
+                && now.isAfter(surveyOpenDate)
+                && now.isBefore(surveyCloseDate);
+    }
+
 }

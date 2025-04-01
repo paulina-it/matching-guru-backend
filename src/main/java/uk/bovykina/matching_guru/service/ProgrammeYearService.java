@@ -54,7 +54,9 @@ public class ProgrammeYearService {
         programmeYear.generateFeedbackConfirmationCode();
         programmeYear.setStrictAcademicStage(createDto.getStrictAcademicStage());
         programmeYear.setStrictCourseGroup(createDto.getStrictCourseGroup());
-
+        programmeYear.setSurveyOpenDate(createDto.getSurveyOpenDate());
+        programmeYear.setSurveyCloseDate(createDto.getSurveyCloseDate());
+        programmeYear.setFeedbackConfirmationCode(programmeYear.generateFeedbackConfirmationCode());
         programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
         log.info("🔧 Set matchApprovalType = {}", createDto.getMatchApprovalType());
 
@@ -139,7 +141,7 @@ public class ProgrammeYearService {
 
     @Transactional
     public ProgrammeYearResponseDto updateProgrammeYear(Long id, ProgrammeYearUpdateDto updateDto) {
-        log.info("Update DTO: {}",updateDto);
+        log.info("Update DTO: {}", updateDto);
         log.info("✏️ Updating ProgrammeYear ID: {}", id);
         ProgrammeYear programmeYear = programmeYearRepository.findById(id)
                 .orElseThrow(() -> {
@@ -164,6 +166,15 @@ public class ProgrammeYearService {
         if (updateDto.getStrictCourseGroup() != null) {
             programmeYear.setStrictCourseGroup(updateDto.getStrictCourseGroup());
             log.info("🔄 Updated strictCourseGroup to {}", updateDto.getStrictCourseGroup());
+        }
+
+        if (updateDto.getSurveyOpenDate() != null) {
+            programmeYear.setSurveyOpenDate(updateDto.getSurveyOpenDate());
+            log.info("📅 Updated surveyOpenDate to {}", updateDto.getSurveyOpenDate());
+        }
+        if (updateDto.getSurveyCloseDate() != null) {
+            programmeYear.setSurveyCloseDate(updateDto.getSurveyCloseDate());
+            log.info("📅 Updated surveyCloseDate to {}", updateDto.getSurveyCloseDate());
         }
 
         programmeYear.setIsActive(updateDto.isActive());
@@ -249,6 +260,9 @@ public class ProgrammeYearService {
         dto.setApprovalThreshold(programmeYear.getApprovalThreshold());
         dto.setStrictAcademicStage(programmeYear.getStrictAcademicStage());
         dto.setStrictCourseGroup(programmeYear.getStrictCourseGroup());
+        dto.setSurveyOpenDate(programmeYear.getSurveyOpenDate());
+        dto.setSurveyCloseDate(programmeYear.getSurveyCloseDate());
+        dto.setFeedbackConfirmationCode(programmeYear.getFeedbackConfirmationCode());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

@@ -6,6 +6,7 @@ import lombok.Setter;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -26,4 +27,7 @@ public class ProgrammeYearResponseDto {
     private Integer unmatchedCount;
     private Boolean strictAcademicStage;
     private Boolean strictCourseGroup;
+    private LocalDateTime surveyOpenDate;
+    private LocalDateTime surveyCloseDate;
+    private String feedbackConfirmationCode;
 }

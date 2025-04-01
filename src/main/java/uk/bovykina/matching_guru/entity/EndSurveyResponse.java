@@ -25,10 +25,10 @@ public class EndSurveyResponse extends BaseEntity {
     @ToString.Exclude
     private ParticipantInProgrammeYear participantInProgramme;
 
-    @ManyToOne
-    @JoinColumn(name = "match_id", nullable = false)
-    @ToString.Exclude
-    private Match match;
+//    @ManyToOne
+//    @JoinColumn(name = "match_id", nullable = false)
+//    @ToString.Exclude
+//    private Match match;
 
     @Column(columnDefinition = "json")
     private String responseData;

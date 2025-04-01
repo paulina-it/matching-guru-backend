@@ -4,6 +4,7 @@ import lombok.Data;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -17,4 +18,7 @@ public class ProgrammeYearUpdateDto {
     private Integer approvalThreshold;
     private Boolean strictAcademicStage;
     private Boolean strictCourseGroup;
+    private LocalDateTime surveyOpenDate;
+    private LocalDateTime surveyCloseDate;
+
 }
