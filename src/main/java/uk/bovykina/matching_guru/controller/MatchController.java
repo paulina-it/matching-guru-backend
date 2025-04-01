@@ -34,9 +34,14 @@ public class MatchController {
     }
 
     @GetMapping("/detailed/participant/{participantId}")
-    public ResponseEntity<DetailedMatchResponseDto> getDetailedMatchByParticipantId(@PathVariable Long participantId) {
-        return ResponseEntity.ok(matchService.getDetailedMatchByParticipantId(participantId));
+    public ResponseEntity<DetailedMatchResponseDto> getDetailedMatchByParticipantId(
+            @PathVariable Long participantId,
+            @RequestParam Long programmeYearId) {
+
+        DetailedMatchResponseDto matchDto = matchService.getDetailedMatchByParticipantId(participantId, programmeYearId);
+        return ResponseEntity.ok(matchDto);
     }
+
 
     @GetMapping("/programmeYear/{programmeYearId}")
     public ResponseEntity<Page<MatchResponseDto>> getMatchesByProgrammeYear(

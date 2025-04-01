@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import uk.bovykina.matching_guru.entity.Match;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 
-import java.util.Optional;
+import java.util.List;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
 
@@ -44,7 +44,7 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     Page<Match> fetchMatchesWithParticipants(Long programmeYearId, Pageable pageable);
 
     @Query("SELECT m FROM Match m WHERE m.mentor.id = :participantId OR m.mentee.id = :participantId")
-    Optional<Match> findByMentorIdOrMenteeId(@Param("participantId") Long participantId);
+    List<Match> findByMentorIdOrMenteeId(@Param("participantId") Long participantId);
 
     @Query("SELECT COUNT(m) > 0 FROM Match m WHERE m.programmeYear.id = :programmeYearId")
     boolean existsByProgrammeYearId(@Param("programmeYearId") Long programmeYearId);

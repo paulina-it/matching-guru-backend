@@ -139,12 +139,22 @@ public class ParticipantController {
     ) {
         try {
             Object participantInfo = participantService.getParticipantInfoByUserIdAndProgrammeYearId(userId, programmeYearId);
-            return ResponseEntity.ok(participantInfo);
+
+            if (participantInfo instanceof List) {
+                return ResponseEntity.ok().body((List<?>) participantInfo);
+            } else {
+                return ResponseEntity.ok(participantInfo);
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Bad request for userId={} and programmeYearId={}: {}", userId, programmeYearId, e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            log.error("Error fetching participant info", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch participant info");
+            log.error("❌ Unexpected error fetching participant info", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch participant info");
         }
     }
+
 
 
 //    @DeleteMapping("/{id}")

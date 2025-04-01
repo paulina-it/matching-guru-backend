@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import uk.bovykina.matching_guru.dto.match.DetailedMatchResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantCreateDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
@@ -29,7 +30,7 @@ public class ParticipantService {
     private final ProgrammeYearRepository programmeYearRepository;
     private final CourseRepository courseRepository;
     private final MatchRepository matchRepository;
-    private final  MatchService matchService;
+    private final MatchService matchService;
 
     @Transactional
     public ParticipantResponseDto createParticipant(ParticipantCreateDto createDto) {
@@ -81,19 +82,22 @@ public class ParticipantService {
                     return new IllegalArgumentException("Participant not found");
                 });
 
-        Optional<Match> match = matchRepository.findByMentorIdOrMenteeId(participant.getId());
-        log.info("🔍 Checking match for participantID {}: {}", participant.getId(), match);
+        List<Match> matches = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        log.info("🔍 Found {} match(es) for participant ID {}: {}", matches.size(), participant.getId(), matches);
 
-        if (match.isPresent()) {
-            log.info("Match found for participant ID: {}, returning DetailedMatchResponseDto", participant.getId());
-            log.info("✅ {}", match);
-            return matchService.getDetailedMatchById(match.get().getId());
+        if (!matches.isEmpty()) {
+            List<DetailedMatchResponseDto> matchDtos = matches.stream()
+                    .map(match -> matchService.getDetailedMatchById(match.getId()))
+                    .toList();
+
+            log.info("✅ Returning {} detailed match DTOs for participant ID {}", matchDtos.size(), participant.getId());
+            return matchDtos;
         } else {
-            log.info("No match found for participant ID: {}, returning ParticipantResponseDto", participant.getId());
-            log.info("❌ {}", participant);
+            log.info("❌ No match found for participant ID: {}, returning ParticipantResponseDto", participant.getId());
             return toParticipantResponseDto(participant);
         }
     }
+
 
     public ParticipantResponseDto getParticipantByUserId(Long userId) {
         return participantRepository.findByUserId(userId)
@@ -236,12 +240,14 @@ public class ParticipantService {
                     return new IllegalArgumentException("Participant not found");
                 });
 
-        Optional<Match> match = matchRepository.findByMentorIdOrMenteeId(participant.getId());
-        log.info("🔍 Match check for participantId {}: {}", participant.getId(), match);
+        List<Match> matches = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        log.info("🔍 Found {} potential match(es) for participantId={}", matches.size(), participant.getId());
 
-        if (match.isPresent()) {
-            log.info("✅ Match found, returning detailed match DTO");
-            return matchService.getDetailedMatchById(match.get().getId());
+        if (!matches.isEmpty()) {
+            log.info("✅ Match(es) found in programmeYearId={}, returning detailed match DTOs", programmeYearId);
+            return matches.stream()
+                    .map(match -> matchService.getDetailedMatchById(match.getId()))
+                    .toList();
         } else {
             log.info("❌ No match found, returning participant response DTO");
             return toParticipantResponseDto(participant);

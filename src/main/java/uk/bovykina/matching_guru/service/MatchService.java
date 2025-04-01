@@ -119,16 +119,20 @@ public class MatchService {
         return MatchMapper.toDetailedResponseDto(match);
     }
 
-    public DetailedMatchResponseDto getDetailedMatchByParticipantId(Long participantId) {
-        log.info("Fetching detailed match for participant ID: {}", participantId);
+    public DetailedMatchResponseDto getDetailedMatchByParticipantId(Long participantId, Long programmeYearId) {
+        log.info("Fetching detailed match for participant ID: {} in programme year: {}", participantId, programmeYearId);
 
-        Match match = matchRepository.findByMentorIdOrMenteeId(participantId)
+        List<Match> matches = matchRepository.findByMentorIdOrMenteeId(participantId);
+
+        Match match = matches.stream()
+                .filter(m -> m.getProgrammeYear().getId().equals(programmeYearId))
+                .findFirst()
                 .orElseThrow(() -> {
-                    log.error("No match found for participant ID {}", participantId);
-                    return new IllegalArgumentException("No match found for this participant");
+                    log.error("No match found for participant ID {} in programme year {}", participantId, programmeYearId);
+                    return new IllegalArgumentException("No match found for this participant in the given programme year");
                 });
 
-        log.info("Successfully retrieved match for participant ID: {}", participantId);
+        log.info("Successfully retrieved match for participant ID: {} in programme year {}", participantId, programmeYearId);
         return MatchMapper.toDetailedResponseDto(match);
     }
 
