@@ -9,5 +9,6 @@ import java.util.Set;
 public class ProgrammeUpdateDto {
     private String name;
     private String description;
+    private String contactEmail;
     private Set<Long> courseGroupIds;
 }

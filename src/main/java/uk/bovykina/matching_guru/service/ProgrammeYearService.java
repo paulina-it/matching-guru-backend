@@ -58,7 +58,7 @@ public class ProgrammeYearService {
         programmeYear.setSurveyCloseDate(createDto.getSurveyCloseDate());
         programmeYear.setFeedbackConfirmationCode(programmeYear.generateFeedbackConfirmationCode());
         programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
-        log.info("🔧 Set matchApprovalType = {}", createDto.getMatchApprovalType());
+        programmeYear.setSurveyUrl(createDto.getSurveyUrl());
 
         if (createDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
             if (createDto.getApprovalThreshold() == null || createDto.getApprovalThreshold() < 0 || createDto.getApprovalThreshold() > 100) {
@@ -177,6 +177,11 @@ public class ProgrammeYearService {
             log.info("📅 Updated surveyCloseDate to {}", updateDto.getSurveyCloseDate());
         }
 
+        if (updateDto.getSurveyUrl() != null) {
+            programmeYear.setSurveyUrl(updateDto.getSurveyUrl());
+            log.info("📅 Updated surveyUrl to {}", updateDto.getSurveyUrl());
+        }
+
         programmeYear.setIsActive(updateDto.isActive());
         log.info("🔄 Updated isActive to {}", updateDto.isActive());
 
@@ -252,6 +257,8 @@ public class ProgrammeYearService {
         dto.setId(programmeYear.getId());
         dto.setProgrammeId(programmeYear.getProgramme().getId());
         dto.setProgrammeName(programmeYear.getProgramme().getName());
+        dto.setProgrammeDescription(programmeYear.getProgramme().getDescription());
+        dto.setContactEmail(programmeYear.getProgramme().getContactEmail());
         dto.setAcademicYear(programmeYear.getAcademicYear());
         dto.setIsActive(programmeYear.getIsActive());
         dto.setJoinCode(programmeYear.getJoinCode());
@@ -263,6 +270,7 @@ public class ProgrammeYearService {
         dto.setSurveyOpenDate(programmeYear.getSurveyOpenDate());
         dto.setSurveyCloseDate(programmeYear.getSurveyCloseDate());
         dto.setFeedbackConfirmationCode(programmeYear.getFeedbackConfirmationCode());
+        dto.setSurveyUrl(programmeYear.getSurveyUrl());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

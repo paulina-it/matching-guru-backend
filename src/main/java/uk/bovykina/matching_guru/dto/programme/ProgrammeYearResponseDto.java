@@ -15,7 +15,9 @@ public class ProgrammeYearResponseDto {
     private Long id;
     private Long programmeId;
     private String programmeName;
+    private String programmeDescription;
     private String academicYear;
+    private String contactEmail;
     private Boolean isActive;
     private String joinCode;
     private AlgorithmType preferredAlgorithm;
@@ -30,4 +32,5 @@ public class ProgrammeYearResponseDto {
     private LocalDateTime surveyOpenDate;
     private LocalDateTime surveyCloseDate;
     private String feedbackConfirmationCode;
+    private String surveyUrl;
 }

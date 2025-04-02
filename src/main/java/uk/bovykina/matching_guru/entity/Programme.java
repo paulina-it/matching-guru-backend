@@ -1,6 +1,7 @@
 package uk.bovykina.matching_guru.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,6 +25,8 @@ public class Programme extends BaseEntity {
 
     private String name;
     private String description;
+    @Email
+    private String contactEmail;
 
     @ManyToOne
     @JoinColumn(name = "organisationId", nullable = false)

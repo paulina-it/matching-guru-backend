@@ -21,5 +21,6 @@ public class ProgrammeYearCreateDto {
     private Boolean strictCourseGroup;
     private LocalDateTime surveyOpenDate;
     private LocalDateTime surveyCloseDate;
+    private String surveyUrl;
 
 }

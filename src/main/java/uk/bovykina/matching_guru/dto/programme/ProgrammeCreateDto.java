@@ -11,4 +11,5 @@ public class ProgrammeCreateDto {
     private String description;
     private Long organisationId;
     private Set<Long> courseGroupIds;
+    private String contactEmail;
 }

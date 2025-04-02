@@ -29,6 +29,8 @@ public class ProgrammeYear extends BaseEntity {
     private Boolean isActive;
     private String joinCode;
     private String feedbackConfirmationCode;
+    @Column(length = 2048)
+    private String surveyUrl;
     private LocalDateTime surveyOpenDate;
     private LocalDateTime surveyCloseDate;
     private Boolean strictAcademicStage;
