@@ -31,6 +31,7 @@ public class ParticipantService {
     private final CourseRepository courseRepository;
     private final MatchRepository matchRepository;
     private final MatchService matchService;
+    private final EndSurveyResponseRepository endSurveyResponseRepository;
 
     @Transactional
     public ParticipantResponseDto createParticipant(ParticipantCreateDto createDto) {
@@ -226,6 +227,8 @@ public class ParticipantService {
         dto.setTimeRange(participant.getTimeRange());
         dto.setMeetingsFrequency(participant.getMeetingsFrequency());
         dto.setSkills(participant.getSkills());
+        boolean hasFeedback = endSurveyResponseRepository.existsByParticipantInProgramme(participant);
+        dto.setHasSubmittedFeedback(hasFeedback);
 
         return dto;
     }

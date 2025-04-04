@@ -12,6 +12,8 @@ import uk.bovykina.matching_guru.dto.match.*;
 import uk.bovykina.matching_guru.entity.Match;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.mapper.MatchMapper;
+import uk.bovykina.matching_guru.repository.EndSurveyResponseRepository;
 import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 
@@ -26,6 +28,7 @@ public class MatchService {
 
     private final MatchRepository matchRepository;
     private final ParticipantRepository participantRepository;
+    private final MatchMapper matchMapper;
 
     public boolean doesMatchExist(Long mentorId, Long menteeId) {
         return matchRepository.existsByMentorIdAndMenteeId(mentorId, menteeId);
@@ -62,7 +65,7 @@ public class MatchService {
         Match savedMatch = matchRepository.save(match);
         log.info("Match created successfully with ID: {}", savedMatch.getId());
 
-        return MatchMapper.toResponseDto(savedMatch);
+        return matchMapper.toResponseDto(savedMatch);
     }
 
     @Transactional
@@ -79,19 +82,19 @@ public class MatchService {
         Match updatedMatch = matchRepository.save(match);
 
         log.info("Match ID: {} status updated successfully to {}", matchId, updatedMatch.getStatus());
-        return MatchMapper.toResponseDto(updatedMatch);
+        return matchMapper.toResponseDto(updatedMatch);
     }
 
     public List<MatchResponseDto> getAllMatches() {
         log.info("Fetching all matches");
         return matchRepository.findAll().stream()
-                .map(MatchMapper::toResponseDto)
+                .map(matchMapper::toResponseDto)
                 .collect(Collectors.toList());
     }
 
     public Page<MatchResponseDto> getMatchesByProgrammeYearId(Long programmeYearId, Pageable pageable) {
         return matchRepository.findByProgrammeYearId(programmeYearId, pageable)
-                .map(MatchMapper::toResponseDto);
+                .map(matchMapper::toResponseDto);
     }
 
     public MatchResponseDto getMatchById(Long matchId) {
@@ -103,7 +106,7 @@ public class MatchService {
                     return new IllegalArgumentException("Match not found");
                 });
 
-        return MatchMapper.toResponseDto(match);
+        return matchMapper.toResponseDto(match);
     }
 
     public DetailedMatchResponseDto getDetailedMatchById(Long matchId) {
@@ -116,7 +119,7 @@ public class MatchService {
                 });
 
         log.info("Successfully retrieved detailed match information for ID: {}", matchId);
-        return MatchMapper.toDetailedResponseDto(match);
+        return matchMapper.toDetailedResponseDto(match);
     }
 
     public DetailedMatchResponseDto getDetailedMatchByParticipantId(Long participantId, Long programmeYearId) {
@@ -133,7 +136,7 @@ public class MatchService {
                 });
 
         log.info("Successfully retrieved match for participant ID: {} in programme year {}", participantId, programmeYearId);
-        return MatchMapper.toDetailedResponseDto(match);
+        return matchMapper.toDetailedResponseDto(match);
     }
 
     @Transactional
@@ -170,68 +173,6 @@ public class MatchService {
         log.info("✅ Found {} matches for ProgrammeYear: {}, Query: '{}', Status: {}",
                 matches.getTotalElements(), programmeYearId, query, status);
 
-        return matches.map(MatchMapper::toResponseDto);
-    }
-
-
-    private static class MatchMapper {
-
-        static MatchResponseDto toResponseDto(Match match) {
-            return new MatchResponseDto(
-                    match.getId(),
-                    Optional.ofNullable(match.getProgrammeYear()).map(p -> p.getId()).orElse(null),
-
-                    match.getMentor().getId(),
-                    formatFullName(match.getMentor()),
-                    match.getMentor().getAcademicStage().name(),
-                    Optional.ofNullable(match.getMentor().getCourse()).map(c -> c.getName()).orElse("N/A"),
-                    match.getCompatibilityScore(),
-                    match.getMentee().getId(),
-                    formatFullName(match.getMentee()),
-                    match.getMentee().getAcademicStage().name(),
-                    Optional.ofNullable(match.getMentee().getCourse()).map(c -> c.getName()).orElse("N/A"),
-
-                    match.getStatus()
-            );
-        }
-
-        static DetailedMatchResponseDto toDetailedResponseDto(Match match) {
-            return new DetailedMatchResponseDto(
-                    match.getId(),
-                    Optional.ofNullable(match.getProgrammeYear()).map(p -> p.getId()).orElse(null),
-                    match.getStatus(),
-                    match.getCreatedAt(),
-                    match.getUpdatedAt(),
-                    toParticipantDto(match.getMentor()),
-                    toParticipantDto(match.getMentee()),
-                    match.getCompatibilityScore()
-            );
-        }
-
-        static DetailedMatchResponseDto.ParticipantDto toParticipantDto(ParticipantInProgrammeYear participant) {
-            return new DetailedMatchResponseDto.ParticipantDto(
-                    participant.getId(),
-                    participant.getUser().getFirstName(),
-                    participant.getUser().getLastName(),
-                    participant.getUser().getEmail(),
-                    participant.getAcademicStage().name(),
-                    Optional.ofNullable(participant.getCourse()).map(c -> c.getName()).orElse("N/A"),
-                    participant.getAvailableDays().stream().map(Enum::name).collect(Collectors.toList()),
-                    participant.getTimeRange().name(),
-                    participant.getSkills(),
-                    participant.getUser().getPersonalityType(),
-                    participant.getUser().getGender(),
-                    participant.getUser().getEthnicity(),
-                    participant.getUser().getHomeCountry(),
-                    participant.getUser().getLivingArrangement(),
-                    participant.getUser().getDisability(),
-                    participant.getUser().getProfileImageUrl(),
-                    participant.getUser().getAgeGroup()
-            );
-        }
-
-        private static String formatFullName(ParticipantInProgrammeYear participant) {
-            return participant.getUser().getFirstName() + " " + participant.getUser().getLastName();
-        }
+        return matches.map(matchMapper::toResponseDto);
     }
 }

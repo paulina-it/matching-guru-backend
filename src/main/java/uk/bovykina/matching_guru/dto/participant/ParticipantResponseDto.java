@@ -42,4 +42,5 @@ public class ParticipantResponseDto {
     private TimeRange timeRange;
     private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
+    private boolean hasSubmittedFeedback;
 }

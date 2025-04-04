@@ -44,5 +44,6 @@ public class DetailedMatchResponseDto {
         private String disability;
         private String profileImageUrl;
         private AgeGroup ageGroup;
+        boolean hasSubmittedFeedback;
     }
 }
