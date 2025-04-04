@@ -123,11 +123,14 @@ public class DashboardService {
             programmeSummaries.add(new ProgrammeParticipationSummaryDto(
                     p.getProgrammeYear().getId(),
                     p.getProgrammeYear().getProgramme().getId(),
+                    p.getId(),
                     p.getProgrammeYear().getProgramme().getName(),
                     p.getProgrammeYear().getAcademicYear(),
                     p.getRole(),
                     p.getIsMatched(),
-                    feedbackSubmitted
+                    feedbackSubmitted,
+                    p.getProgrammeYear().getSurveyUrl(),
+                    p.getProgrammeYear().getSurveyCloseDate()
             ));
 
             for (Match m : userMatches) {
@@ -181,8 +184,8 @@ public class DashboardService {
                 .hasFeedbackPending(hasFeedbackPending)
                 .hasOverdueInteractions(hasOverdueInteractions)
                 .lastInteraction(latestInteraction)
-                .nextSuggestedMeetingDate(null) // future enhancement
-                .suggestedMeetingDay(null)     // future enhancement
+                .nextSuggestedMeetingDate(null)
+                .suggestedMeetingDay(null)
                 .lastUpdated(LocalDateTime.now())
                 .build();
     }

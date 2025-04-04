@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class FeedbackSubmissionDto {
-    private Long userId;
+    private Long participantId;
     private Long programmeYearId;
     private String code;
     private String responseData;

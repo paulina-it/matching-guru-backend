@@ -30,29 +30,32 @@ public class EndSurveyResponseService {
     private final EndSurveyMapper endSurveyMapper = new EndSurveyMapper();
 
     @Transactional
-    public void handleFeedbackSubmission(FeedbackSubmissionDto dto) {
-        log.info("📝 Handling feedback for userId={} in programmeYearId={}", dto.getUserId(), dto.getProgrammeYearId());
+    public boolean handleFeedbackSubmission(FeedbackSubmissionDto dto) {
+        log.info("📝 Handling feedback for participantId={} in programmeYearId={}", dto.getParticipantId(), dto.getProgrammeYearId());
 
         ProgrammeYear programmeYear = programmeYearRepository.findById(dto.getProgrammeYearId())
                 .orElseThrow(() -> new IllegalArgumentException("Programme year not found."));
 
         if (!dto.getCode().equals(programmeYear.getFeedbackConfirmationCode())) {
             log.warn("❌ Invalid feedback code: received {}, expected {}", dto.getCode(), programmeYear.getFeedbackConfirmationCode());
-            throw new IllegalArgumentException("Invalid confirmation code.");
+            return dto.getCode().equals(programmeYear.getFeedbackConfirmationCode());
         }
 
         ParticipantInProgrammeYear participant = participantRepository
-                .findByUserIdAndProgrammeYearId(dto.getUserId(), dto.getProgrammeYearId())
+                .findByIdAndProgrammeYearId(dto.getParticipantId(), dto.getProgrammeYearId())
                 .orElseThrow(() -> new IllegalArgumentException("Participant not found."));
-
+        log.info("Participant found: {}", participant.getRole());
         EndSurveyResponse response = new EndSurveyResponse();
         response.setParticipantInProgramme(participant);
+        response.setProgrammeYear(programmeYear);
         response.setCompletedAt(LocalDateTime.now());
         response.setFeedbackConfirmationCode(dto.getCode());
-        response.setResponseData(dto.getResponseData());
+//        response.setResponseData(dto.getResponseData());
 
         endSurveyResponseRepository.save(response);
+
         log.info("✅ Feedback saved for participantId={}", participant.getId());
+        return dto.getCode().equals(programmeYear.getFeedbackConfirmationCode());
     }
 
     public List<EndSurveyResponseDto> getResponsesByParticipant(Long participantId) {
@@ -85,17 +88,18 @@ public class EndSurveyResponseService {
             EndSurveyResponseDto dto = new EndSurveyResponseDto();
             dto.setId(surveyResponse.getId());
             dto.setParticipantInProgrammeId(surveyResponse.getParticipantInProgramme().getId());
-            dto.setResponseData(surveyResponse.getResponseData());
+//            dto.setResponseData(surveyResponse.getResponseData());
             dto.setCompletedAt(surveyResponse.getCompletedAt());
             return dto;
         }
 
-        public EndSurveyResponse toEntity(EndSurveyResponseCreateDto dto, ParticipantInProgrammeYear participant) {
+        public EndSurveyResponse toEntity(EndSurveyResponseCreateDto dto, ParticipantInProgrammeYear participant, ProgrammeYear programmeYear) {
             log.info("Mapping EndSurveyResponseCreateDto to EndSurveyResponse for participant ID: {}", participant.getId());
 
             EndSurveyResponse surveyResponse = new EndSurveyResponse();
             surveyResponse.setParticipantInProgramme(participant);
-            surveyResponse.setResponseData(dto.getResponseData());
+            surveyResponse.setProgrammeYear(programmeYear);
+//            surveyResponse.setResponseData(dto.getResponseData());
             return surveyResponse;
         }
     }

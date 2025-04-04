@@ -21,17 +21,22 @@ public class EndSurveyResponse extends BaseEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "participantInProgramme", nullable = false)
-    @ToString.Exclude
+    @JoinColumn(name = "participant_in_programme_year", nullable = false)
     private ParticipantInProgrammeYear participantInProgramme;
+
+    @ManyToOne
+    @JoinColumn(name = "programmeYear", nullable = false)
+    @ToString.Exclude
+    private ProgrammeYear programmeYear;
 
 //    @ManyToOne
 //    @JoinColumn(name = "match_id", nullable = false)
 //    @ToString.Exclude
 //    private Match match;
 
-    @Column(columnDefinition = "json")
-    private String responseData;
+//    @Lob
+//    @Column(name = "response_data", columnDefinition = "json")
+//    private String responseData;
 
     private LocalDateTime completedAt;
 
