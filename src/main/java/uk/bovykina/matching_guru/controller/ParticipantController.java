@@ -163,10 +163,10 @@ public class ParticipantController {
     }
 
     @PostMapping("/feedback")
-    public ResponseEntity<?> submitFeedback(@RequestBody FeedbackSubmissionDto dto) {
+    public ResponseEntity<?> submitFeedbackCode(@RequestBody FeedbackSubmissionDto dto) {
         try {
-            endSurveyResponseService.handleFeedbackSubmission(dto);
-            return ResponseEntity.ok("Feedback recorded.");
+            boolean isValid = endSurveyResponseService.handleFeedbackSubmission(dto);
+            return ResponseEntity.ok(isValid);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
