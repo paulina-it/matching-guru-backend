@@ -95,4 +95,6 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
     Optional<ParticipantInProgrammeYear> findByUserIdAndProgrammeYearId(Long userId, Long programmeYearId);
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole role, boolean isMatched);
+
+    List<ParticipantInProgrammeYear> findAllByUserId(Long userId);
 }

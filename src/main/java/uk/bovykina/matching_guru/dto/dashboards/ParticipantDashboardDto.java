@@ -1,25 +1,33 @@
 package uk.bovykina.matching_guru.dto.dashboards;
 
-import lombok.Getter;
-import lombok.Setter;
-import uk.bovykina.matching_guru.dto.survey.EndSurveyResponseDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeYearResponseDto;
-//import uk.bovykina.matching_guru.dto.meetings.MeetingDto;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import uk.bovykina.matching_guru.dto.match.DetailedMatchResponseDto;
+import uk.bovykina.matching_guru.dto.match.MatchSummaryDto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ParticipantDashboardDto {
-    private List<EndSurveyResponseDto> feedback;
-    private List<ParticipantProgrammeParticipationDto> participations;
-//    private List<MeetingDto> meetings; // Added for scheduled mentorship meetings
+    private String participantName;
+    private String organisationName;
 
-    @Getter
-    @Setter
-    public static class ParticipantProgrammeParticipationDto {
-        private ProgrammeYearResponseDto programmeYear;
-        private Boolean isMentor;
-        private Boolean isMentee;
-    }
+    private List<ProgrammeParticipationSummaryDto> activeParticipations;
+    private List<MatchSummaryDto> matches;
+
+    private boolean hasUnconfirmedMatches;
+    private boolean hasFeedbackPending;
+    private boolean hasOverdueInteractions;
+
+    private LocalDateTime lastInteraction;
+    private LocalDateTime nextSuggestedMeetingDate;
+    private String suggestedMeetingDay;
+
+    private LocalDateTime lastUpdated;
 }
