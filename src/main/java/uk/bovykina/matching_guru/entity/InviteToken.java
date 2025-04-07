@@ -9,10 +9,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class InviteToken {
 
     @Id
@@ -28,5 +28,9 @@ public class InviteToken {
     private LocalDateTime expiryDate;
 
     public InviteToken(String token, Long organisationId, String email, LocalDateTime expiryDate) {
+        this.token = token;
+        this.organisationId = organisationId;
+        this.email = email;
+        this.expiryDate = expiryDate;
     }
 }
