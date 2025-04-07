@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import uk.bovykina.matching_guru.entity.enums.*;
 
+@Setter
 @Getter
 public class UserCreateDto {
 
