@@ -62,7 +62,6 @@ public class ParticipantService {
         participant.setMeetingsFrequency(createDto.getMeetingsFrequency());
         participant.setSkills(createDto.getSkills());
 
-        // Check if participant was unmatched in the same programme before
         boolean wasUnmatchedInPast = participantRepository
                 .findByUserId(user.getId()).stream()
                 .filter(p -> !p.getProgrammeYear().getId().equals(programmeYear.getId()))
