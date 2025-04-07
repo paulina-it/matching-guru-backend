@@ -37,8 +37,15 @@ public class GaleShapleyService {
 
         ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
 
-        List<ParticipantInProgrammeYear> mentors = loadParticipants(programmeYearId, ParticipantRole.MENTOR, isInitialMatching);
-        List<ParticipantInProgrammeYear> mentees = loadParticipants(programmeYearId, ParticipantRole.MENTEE, isInitialMatching);
+        List<ParticipantInProgrammeYear> mentors = loadParticipants(programmeYearId, ParticipantRole.MENTOR, isInitialMatching)
+                .stream()
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
+                .collect(Collectors.toList());
+
+        List<ParticipantInProgrammeYear> mentees = loadParticipants(programmeYearId, ParticipantRole.MENTEE, isInitialMatching)
+                .stream()
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
+                .collect(Collectors.toList());
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
             log.warn("⚠ Not enough participants to match");

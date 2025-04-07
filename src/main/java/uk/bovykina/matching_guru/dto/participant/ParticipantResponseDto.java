@@ -37,7 +37,7 @@ public class ParticipantResponseDto {
     private Boolean hadPlacement;
     private String placementDescription;
     private String motivation;
-    private Boolean isReturningParticipant;
+    private Boolean wasMatchedLastYear;
     private Set<DayOfWeek> availableDays;
     private TimeRange timeRange;
     private MeetingFrequency meetingsFrequency;

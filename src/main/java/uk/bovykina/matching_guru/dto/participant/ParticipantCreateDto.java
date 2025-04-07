@@ -27,7 +27,7 @@ public class ParticipantCreateDto {
     @Size(max = 500, message = "Placement description must not exceed 500 characters")
     private String placementDescription;
     private String motivation;
-    private Boolean isReturningParticipant;
+    private Boolean wasMatchedLastYear;
     private Set<DayOfWeek> availableDays;
     private TimeRange timeRange;
     private MeetingFrequency meetingsFrequency;

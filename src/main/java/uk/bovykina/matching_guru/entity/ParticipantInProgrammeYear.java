@@ -49,7 +49,7 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     private Boolean hadPlacement;
     private String placementDescription;
     private String motivation;
-    private Boolean isReturningParticipant;
+    private Boolean wasMatchedLastYear;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "participant_availability_days", joinColumns = @JoinColumn(name = "participant_id"))

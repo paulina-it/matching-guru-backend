@@ -56,11 +56,20 @@ public class ParticipantService {
         participant.setHadPlacement(createDto.getHadPlacement());
         participant.setPlacementDescription(createDto.getPlacementDescription());
         participant.setMotivation(createDto.getMotivation());
-        participant.setIsReturningParticipant(createDto.getIsReturningParticipant());
+//        participant.setWasMatchedLastYear(createDto.getWasMatchedLastYear());
         participant.setAvailableDays(createDto.getAvailableDays());
         participant.setTimeRange(createDto.getTimeRange());
         participant.setMeetingsFrequency(createDto.getMeetingsFrequency());
         participant.setSkills(createDto.getSkills());
+
+        // Check if participant was unmatched in the same programme before
+        boolean wasUnmatchedInPast = participantRepository
+                .findByUserId(user.getId()).stream()
+                .filter(p -> !p.getProgrammeYear().getId().equals(programmeYear.getId()))
+                .filter(p -> p.getProgrammeYear().getProgramme().getId().equals(programmeYear.getProgramme().getId()))
+                .anyMatch(p -> Boolean.FALSE.equals(p.getIsMatched()));
+
+        participant.setWasMatchedLastYear(!wasUnmatchedInPast);
 
         ParticipantInProgrammeYear savedParticipant = participantRepository.save(participant);
         log.info("Participant created successfully for User ID: {}", createDto.getUserId());
@@ -125,8 +134,8 @@ public class ParticipantService {
         if (updateDto.getPlacementDescription() != null)
             participant.setPlacementDescription(updateDto.getPlacementDescription());
         if (updateDto.getMotivation() != null) participant.setMotivation(updateDto.getMotivation());
-        if (updateDto.getIsReturningParticipant() != null)
-            participant.setIsReturningParticipant(updateDto.getIsReturningParticipant());
+        if (updateDto.getWasMatchedLastYear() != null)
+            participant.setWasMatchedLastYear(updateDto.getWasMatchedLastYear());
         if (updateDto.getAvailableDays() != null) participant.setAvailableDays(updateDto.getAvailableDays());
         if (updateDto.getTimeRange() != null) participant.setTimeRange(updateDto.getTimeRange());
         if (updateDto.getMeetingsFrequency() != null)
@@ -222,7 +231,7 @@ public class ParticipantService {
         dto.setHadPlacement(participant.getHadPlacement());
         dto.setPlacementDescription(participant.getPlacementDescription());
         dto.setMotivation(participant.getMotivation());
-        dto.setIsReturningParticipant(participant.getIsReturningParticipant());
+        dto.setWasMatchedLastYear(participant.getWasMatchedLastYear());
         dto.setAvailableDays(participant.getAvailableDays());
         dto.setTimeRange(participant.getTimeRange());
         dto.setMeetingsFrequency(participant.getMeetingsFrequency());

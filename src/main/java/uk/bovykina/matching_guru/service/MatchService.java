@@ -13,12 +13,10 @@ import uk.bovykina.matching_guru.entity.Match;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.mapper.MatchMapper;
-import uk.bovykina.matching_guru.repository.EndSurveyResponseRepository;
 import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j

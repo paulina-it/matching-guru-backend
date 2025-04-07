@@ -35,6 +35,8 @@ public class BraceService implements MatchingAlgorithm {
 
         List<ParticipantInProgrammeYear> mentors = new ArrayList<>(participantLoader.loadMentors(programmeYearId));
         List<ParticipantInProgrammeYear> mentees = new ArrayList<>(participantLoader.loadMentees(programmeYearId));
+        mentors.sort(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())));
+        mentees.sort(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())));
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
             log.warn("⚠ Not enough participants for matching");
