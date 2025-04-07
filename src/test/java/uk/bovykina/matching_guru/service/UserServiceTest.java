@@ -150,4 +150,32 @@ class UserServiceTest {
 
         assertEquals(1, result.getTotalElements());
     }
+
+    @Test
+    void updateUser_shouldUpdateFields() {
+        UserUpdateDto updateDto = new UserUpdateDto();
+        updateDto.setId(1L);
+        updateDto.setFirstName("Updated");
+        updateDto.setLastName("Name");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any())).thenReturn(user);
+        when(userMapper.toUserResponseDto(user)).thenReturn(new UserResponseDto());
+
+        UserResponseDto result = userService.updateUser(updateDto);
+
+        assertNotNull(result);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void createUser_shouldThrowIfInvalidJoinCode() {
+        createDto.setJoinCode("invalid123");
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
+        when(userMapper.toUser(createDto)).thenReturn(user);
+        when(organisationRepository.findByJoinCode("invalid123")).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> userService.createUser(createDto));
+    }
 }

@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.validation.constraints.Email;
 import lombok.Getter;
+import lombok.Setter;
 import uk.bovykina.matching_guru.entity.enums.*;
 
+@Setter
 @Getter
 public class UserUpdateDto {
     private Long id;
