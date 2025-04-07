@@ -44,7 +44,6 @@ class CourseGroupServiceTest {
 
     @Test
     void testCreateCourseGroup() {
-        // Arrange
         Long organisationId = 1L;
         Organisation organisation = new Organisation();
         organisation.setId(organisationId);
@@ -61,10 +60,8 @@ class CourseGroupServiceTest {
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.of(organisation));
         when(courseGroupRepository.save(any(CourseGroup.class))).thenReturn(savedGroup);
 
-        // Act
         CourseGroupDto result = courseGroupService.createCourseGroup(courseGroupCreateDto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(savedGroup.getId(), result.getId());
         assertEquals(savedGroup.getName(), result.getName());
@@ -76,7 +73,6 @@ class CourseGroupServiceTest {
 
     @Test
     void testGetCourseGroupsByOrganisationId() {
-        // Arrange
         Long organisationId = 1L;
 
         Organisation organisation = new Organisation();
@@ -90,19 +86,15 @@ class CourseGroupServiceTest {
         Course course = new Course();
         course.setId(1L);
         course.setName("Test Course");
-        course.setType(CourseType.UNDERGRAD); // Use CourseType enum
+        course.setType(CourseType.UNDERGRAD);
         course.setDuration(3);
         course.setGroup(courseGroup);
 
-        when(courseGroupRepository.findByOrganisationId(organisationId))
-                .thenReturn(Collections.singletonList(courseGroup));
-        when(courseRepository.findByGroupId(courseGroup.getId()))
-                .thenReturn(Collections.singletonList(course));
+        when(courseGroupRepository.findByOrganisationId(organisationId)).thenReturn(Collections.singletonList(courseGroup));
+        when(courseRepository.findByGroupId(courseGroup.getId())).thenReturn(Collections.singletonList(course));
 
-        // Act
         List<CourseGroupDto> result = courseGroupService.getCourseGroupsByOrganisationId(organisationId);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(courseGroup.getId(), result.get(0).getId());
@@ -116,19 +108,13 @@ class CourseGroupServiceTest {
 
     @Test
     void testDeleteCourseGroup() {
-        // Arrange
         Long courseGroupId = 1L;
-
-        // Act
         courseGroupService.deleteCourseGroup(courseGroupId);
-
-        // Assert
         verify(courseGroupRepository).deleteById(courseGroupId);
     }
 
     @Test
     void testCreateCourseGroup_OrganisationNotFound() {
-        // Arrange
         Long organisationId = 1L;
         CourseGroupCreateDto courseGroupCreateDto = new CourseGroupCreateDto();
         courseGroupCreateDto.setName("Test Group");
@@ -136,13 +122,12 @@ class CourseGroupServiceTest {
 
         when(organisationRepository.findById(organisationId)).thenReturn(Optional.empty());
 
-        // Act & Assert
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> courseGroupService.createCourseGroup(courseGroupCreateDto)
         );
 
-        assertEquals("Organisation not found with id: " + organisationId, exception.getMessage());
+        assertEquals("Organisation not found with ID: " + organisationId, exception.getMessage());
         verify(organisationRepository).findById(organisationId);
         verifyNoInteractions(courseGroupRepository);
     }

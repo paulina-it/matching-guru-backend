@@ -15,13 +15,12 @@ import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.CourseRepository;
 import uk.bovykina.matching_guru.repository.ProgrammeRepository;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 class CourseServiceTest {
@@ -45,10 +44,9 @@ class CourseServiceTest {
 
     @Test
     void testCreateCourse() {
-        // Arrange
         CourseCreateDto createDto = new CourseCreateDto();
         createDto.setName("Computer Science");
-        createDto.setType(CourseType.UNDERGRAD); // Use correct enum value
+        createDto.setType(CourseType.UNDERGRAD);
         createDto.setDuration(3);
         createDto.setGroupId(1L);
 
@@ -66,10 +64,8 @@ class CourseServiceTest {
 
         when(courseRepository.save(any(Course.class))).thenReturn(savedCourse);
 
-        // Act
         CourseDto result = courseService.createCourse(createDto);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Computer Science", result.getName());
@@ -83,11 +79,10 @@ class CourseServiceTest {
 
     @Test
     void testGetCoursesByGroupId() {
-        // Arrange
         Long groupId = 1L;
 
         CourseGroup mockGroup = new CourseGroup();
-        mockGroup.setId(1L);
+        mockGroup.setId(groupId);
 
         Course course1 = new Course();
         course1.setId(1L);
@@ -105,10 +100,8 @@ class CourseServiceTest {
 
         when(courseRepository.findByGroupId(groupId)).thenReturn(List.of(course1, course2));
 
-        // Act
         List<CourseDto> result = courseService.getCoursesByGroupId(groupId);
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
         assertEquals("Course 1", result.get(0).getName());
@@ -119,10 +112,8 @@ class CourseServiceTest {
 
     @Test
     void testGetEligibleCoursesByProgrammeId() {
-        // Arrange
         Long programmeId = 1L;
 
-        // Mock Programme with Eligible Course Groups
         Programme mockProgramme = new Programme();
         mockProgramme.setId(programmeId);
 
@@ -135,7 +126,6 @@ class CourseServiceTest {
         Set<CourseGroup> eligibleGroups = new HashSet<>(Set.of(mockGroup1, mockGroup2));
         mockProgramme.setEligibleCourseGroups(eligibleGroups);
 
-        // Mock Courses in these Groups
         Course course1 = new Course();
         course1.setId(1L);
         course1.setName("Course 1");
@@ -150,34 +140,26 @@ class CourseServiceTest {
         course2.setDuration(1);
         course2.setGroup(mockGroup2);
 
-        // Mock Repository Methods
         when(programmeRepository.findById(programmeId)).thenReturn(Optional.of(mockProgramme));
-        when(courseRepository.findByGroupIds(Arrays.asList(1L, 2L))).thenReturn(Arrays.asList(course1, course2));
+        when(courseRepository.findByGroupIds(argThat(ids ->
+                ids.contains(1L) && ids.contains(2L) && ids.size() == 2
+        ))).thenReturn(Arrays.asList(course1, course2));
 
-        // Act
         List<CourseDto> result = courseService.getEligibleCoursesByProgrammeId(programmeId);
 
-        // Assert
         assertNotNull(result);
         assertEquals(2, result.size(), "There should be 2 eligible courses");
         assertEquals("Course 1", result.get(0).getName());
         assertEquals("Course 2", result.get(1).getName());
 
         verify(programmeRepository).findById(programmeId);
-        verify(courseRepository).findByGroupIds(Arrays.asList(1L, 2L));
+        verify(courseRepository).findByGroupIds(anyList());
     }
-
-
 
     @Test
     void testDeleteCourse() {
-        // Arrange
         Long courseId = 1L;
-
-        // Act
         courseService.deleteCourse(courseId);
-
-        // Assert
         verify(courseRepository).deleteById(courseId);
     }
 }
