@@ -87,7 +87,7 @@ public class GaleShapleyService {
                     .limit(5)
                     .collect(Collectors.toList());
 
-            Collections.shuffle(compatibleMentees);
+//            Collections.shuffle(compatibleMentees);
             if (!compatibleMentees.isEmpty()) {
                 mentorPreferences.put(mentor, new LinkedList<>(compatibleMentees));
             }
