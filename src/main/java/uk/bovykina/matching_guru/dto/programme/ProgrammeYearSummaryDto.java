@@ -9,7 +9,7 @@ public class ProgrammeYearSummaryDto {
     private Long id;
     private Long programmeId;
     private String name;
-    private boolean isActive;
+    private Boolean isActive;
     private int participantsCount;
     private int matchesCount;
 }

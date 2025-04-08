@@ -19,6 +19,10 @@ public class ProgrammeYearResponseDto {
     private String academicYear;
     private String contactEmail;
     private Boolean isActive;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private LocalDateTime signupOpenDate;
+    private LocalDateTime signupCloseDate;
     private String joinCode;
     private AlgorithmType preferredAlgorithm;
     private List<MatchingCriteriaDto> matchingCriteria;
@@ -33,4 +37,7 @@ public class ProgrammeYearResponseDto {
     private LocalDateTime surveyCloseDate;
     private String feedbackConfirmationCode;
     private String surveyUrl;
+    private boolean isSurveyOpen;
+    private boolean isSignupOpen;
+    private boolean isCurrentlyRunning;
 }

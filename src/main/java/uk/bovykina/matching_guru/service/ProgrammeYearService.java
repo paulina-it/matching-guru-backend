@@ -59,6 +59,10 @@ public class ProgrammeYearService {
         programmeYear.setFeedbackConfirmationCode(programmeYear.generateFeedbackConfirmationCode());
         programmeYear.setMatchApprovalType(createDto.getMatchApprovalType());
         programmeYear.setSurveyUrl(createDto.getSurveyUrl());
+        programmeYear.setStartDate(createDto.getStartDate());
+        programmeYear.setEndDate(createDto.getEndDate());
+        programmeYear.setSignupOpenDate(createDto.getSignupOpenDate());
+        programmeYear.setSignupCloseDate(createDto.getSignupCloseDate());
 
         if (createDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
             if (createDto.getApprovalThreshold() == null || createDto.getApprovalThreshold() < 0 || createDto.getApprovalThreshold() > 100) {
@@ -182,8 +186,27 @@ public class ProgrammeYearService {
             log.info("📅 Updated surveyUrl to {}", updateDto.getSurveyUrl());
         }
 
-        programmeYear.setIsActive(updateDto.isActive());
-        log.info("🔄 Updated isActive to {}", updateDto.isActive());
+        if (updateDto.getIsActive() != null) {
+            programmeYear.setIsActive(updateDto.getIsActive());
+            log.info("🔄 Updated isActive to {}", updateDto.getIsActive());
+        }
+
+        if (updateDto.getStartDate() != null) {
+            programmeYear.setStartDate(updateDto.getStartDate());
+            log.info("📅 Updated startDate to {}", updateDto.getStartDate());
+        }
+        if (updateDto.getEndDate() != null) {
+            programmeYear.setEndDate(updateDto.getEndDate());
+            log.info("📅 Updated endDate to {}", updateDto.getEndDate());
+        }
+        if (updateDto.getSignupOpenDate() != null) {
+            programmeYear.setSignupOpenDate(updateDto.getSignupOpenDate());
+            log.info("📅 Updated signupOpenDate to {}", updateDto.getSignupOpenDate());
+        }
+        if (updateDto.getSignupCloseDate() != null) {
+            programmeYear.setSignupCloseDate(updateDto.getSignupCloseDate());
+            log.info("📅 Updated signupCloseDate to {}", updateDto.getSignupCloseDate());
+        }
 
         if (updateDto.getMatchApprovalType() != null) {
             programmeYear.setMatchApprovalType(updateDto.getMatchApprovalType());
@@ -271,6 +294,13 @@ public class ProgrammeYearService {
         dto.setSurveyCloseDate(programmeYear.getSurveyCloseDate());
         dto.setFeedbackConfirmationCode(programmeYear.getFeedbackConfirmationCode());
         dto.setSurveyUrl(programmeYear.getSurveyUrl());
+        dto.setStartDate(programmeYear.getStartDate());
+        dto.setEndDate(programmeYear.getEndDate());
+        dto.setSignupOpenDate(programmeYear.getSignupOpenDate());
+        dto.setSignupCloseDate(programmeYear.getSignupCloseDate());
+        dto.setSurveyOpen(programmeYear.isSurveyOpen());
+        dto.setSignupOpen(programmeYear.isSignupOpen());
+        dto.setCurrentlyRunning(programmeYear.isCurrentlyRunning());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

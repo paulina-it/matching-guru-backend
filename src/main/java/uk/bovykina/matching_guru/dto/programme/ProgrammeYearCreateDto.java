@@ -22,5 +22,10 @@ public class ProgrammeYearCreateDto {
     private LocalDateTime surveyOpenDate;
     private LocalDateTime surveyCloseDate;
     private String surveyUrl;
+    private Boolean isActive;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private LocalDateTime signupOpenDate;
+    private LocalDateTime signupCloseDate;
 
 }

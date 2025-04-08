@@ -23,8 +23,10 @@ public class ProgrammeYear extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-//    private LocalDateTime startDate;
-//    private LocalDateTime endDate;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private LocalDateTime signupOpenDate;
+    private LocalDateTime signupCloseDate;
     private String academicYear;
     private Boolean isActive;
     private String joinCode;
@@ -76,4 +78,17 @@ public class ProgrammeYear extends BaseEntity {
                 && now.isBefore(surveyCloseDate);
     }
 
+    public boolean isSignupOpen() {
+        LocalDateTime now = LocalDateTime.now();
+        return signupOpenDate != null && signupCloseDate != null
+                && now.isAfter(signupOpenDate)
+                && now.isBefore(signupCloseDate);
+    }
+
+    public boolean isCurrentlyRunning() {
+        LocalDateTime now = LocalDateTime.now();
+        return startDate != null && endDate != null
+                && now.isAfter(startDate)
+                && now.isBefore(endDate);
+    }
 }

@@ -12,7 +12,7 @@ public class ProgrammeYearUpdateDto {
     private String academicYear;
     private String customSettings;
     private AlgorithmType preferredAlgorithm;
-    private boolean isActive;
+    private Boolean isActive;
     private List<MatchingCriteriaDto> matchingCriteria;
     private MatchApprovalType matchApprovalType;
     private Integer approvalThreshold;
@@ -21,5 +21,9 @@ public class ProgrammeYearUpdateDto {
     private LocalDateTime surveyOpenDate;
     private LocalDateTime surveyCloseDate;
     private String surveyUrl;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private LocalDateTime signupOpenDate;
+    private LocalDateTime signupCloseDate;
 
 }
