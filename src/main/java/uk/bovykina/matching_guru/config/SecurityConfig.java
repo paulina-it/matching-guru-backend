@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/stats/**").hasAnyAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/matches/update-status").hasAuthority("ROLE_ADMIN")
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/communication-logs/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
