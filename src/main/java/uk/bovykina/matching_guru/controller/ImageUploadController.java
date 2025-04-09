@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.service.OrganisationService;
+import uk.bovykina.matching_guru.service.ProgrammeYearService;
 import uk.bovykina.matching_guru.service.UserService;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class ImageUploadController {
 
     private final UserService userService;
     private final OrganisationService organisationService;
+    private final ProgrammeYearService programmeYearService;
 
     /**
      * Uploads a profile image and returns the image URL.
@@ -76,6 +78,39 @@ public class ImageUploadController {
                     .body("Failed to upload logo: " + e.getMessage());
         }
     }
+
+    /**
+     * Uploads a certificate template to Cloudinary.
+     */
+    @PostMapping("/certificate-template")
+    public ResponseEntity<String> uploadCertificateTemplate(
+            @RequestParam("file") MultipartFile file) {
+
+        log.info("📄 Uploading certificate template");
+
+        if (file == null || file.isEmpty()) {
+            log.warn("⚠️ No certificate template file uploaded.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No file uploaded.");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            log.warn("⚠️ Invalid certificate template file type: {}", contentType);
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                    .body("Only image files are allowed (JPG, PNG, etc).");
+        }
+
+        try {
+            String imageUrl = programmeYearService.uploadCertificateTemplate(file);
+            log.info("✅ Certificate template uploaded successfully: {}", imageUrl);
+            return ResponseEntity.ok(imageUrl);
+        } catch (IOException e) {
+            log.error("❌ Error uploading certificate template: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading certificate template: " + e.getMessage());
+        }
+    }
+
 
     /**
      * Handles max upload size exceeded.

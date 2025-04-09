@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.programme.MatchingCriteriaDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeYearCreateDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeYearResponseDto;
@@ -13,8 +14,11 @@ import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
 import uk.bovykina.matching_guru.repository.*;
+import uk.bovykina.matching_guru.util.CloudinaryService;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -28,6 +32,7 @@ public class ProgrammeYearService {
     private final ProgrammeMatchingCriteriaRepository matchingCriteriaRepository;
     private final ParticipantRepository participantRepository;
     private final MatchRepository matchRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public ProgrammeYearResponseDto createProgrammeYear(ProgrammeYearCreateDto createDto) {
@@ -253,6 +258,29 @@ public class ProgrammeYearService {
         programmeYearRepository.delete(programmeYear);
         log.info("✅ ProgrammeYear deleted successfully");
     }
+
+    public String uploadAndSaveCertificateTemplate(Long programmeYearId, MultipartFile file) throws IOException {
+        log.info("📄 Uploading certificate template for programme year ID: {}", programmeYearId);
+
+        ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
+                .orElseThrow(() -> {
+                    log.error("❌ Programme year not found with ID: {}", programmeYearId);
+                    return new NoSuchElementException("Programme year not found.");
+                });
+
+        String templateUrl = cloudinaryService.uploadImage(file, "certificate_templates");
+
+        programmeYear.setCertificateTemplateUrl(templateUrl);
+        programmeYearRepository.save(programmeYear);
+
+        log.info("✅ Certificate template uploaded successfully for programme year ID: {}", programmeYearId);
+        return templateUrl;
+    }
+
+    public String uploadCertificateTemplate(MultipartFile file) throws IOException {
+        return cloudinaryService.uploadImage(file, "certificate_templates");
+    }
+
 
     private void saveMatchingCriteria(ProgrammeYear programmeYear, List<MatchingCriteriaDto> criteriaDtos) {
         int totalWeight = criteriaDtos.stream()
