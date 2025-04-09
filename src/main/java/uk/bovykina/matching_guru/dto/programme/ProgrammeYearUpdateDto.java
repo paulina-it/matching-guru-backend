@@ -25,5 +25,5 @@ public class ProgrammeYearUpdateDto {
     private LocalDateTime endDate;
     private LocalDateTime signupOpenDate;
     private LocalDateTime signupCloseDate;
-
+    private String certificateTemplateUrl;
 }

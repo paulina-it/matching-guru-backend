@@ -40,4 +40,5 @@ public class ProgrammeYearResponseDto {
     private boolean isSurveyOpen;
     private boolean isSignupOpen;
     private boolean isCurrentlyRunning;
+    private String certificateTemplateUrl;
 }

@@ -63,6 +63,7 @@ public class ProgrammeYearService {
         programmeYear.setEndDate(createDto.getEndDate());
         programmeYear.setSignupOpenDate(createDto.getSignupOpenDate());
         programmeYear.setSignupCloseDate(createDto.getSignupCloseDate());
+        programmeYear.setCertificateTemplateUrl(createDto.getCertificateTemplateUrl());
 
         if (createDto.getMatchApprovalType() == MatchApprovalType.THRESHOLD) {
             if (createDto.getApprovalThreshold() == null || createDto.getApprovalThreshold() < 0 || createDto.getApprovalThreshold() > 100) {
@@ -230,6 +231,11 @@ public class ProgrammeYearService {
             saveMatchingCriteria(programmeYear, updateDto.getMatchingCriteria());
         }
 
+        if (updateDto.getCertificateTemplateUrl() != null) {
+            log.info("📊 Updating certificateTemplateUrl to {}", updateDto.getCertificateTemplateUrl());
+            programmeYear.setCertificateTemplateUrl(updateDto.getCertificateTemplateUrl());
+        }
+
         ProgrammeYear updatedProgrammeYear = programmeYearRepository.save(programmeYear);
         log.info("💾 ProgrammeYear updated with ID = {}", updatedProgrammeYear.getId());
 
@@ -301,6 +307,7 @@ public class ProgrammeYearService {
         dto.setSurveyOpen(programmeYear.isSurveyOpen());
         dto.setSignupOpen(programmeYear.isSignupOpen());
         dto.setCurrentlyRunning(programmeYear.isCurrentlyRunning());
+        dto.setCertificateTemplateUrl(programmeYear.getCertificateTemplateUrl());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
         dto.setParticipantCount(participantCount);

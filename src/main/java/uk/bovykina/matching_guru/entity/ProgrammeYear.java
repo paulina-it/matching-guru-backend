@@ -37,6 +37,8 @@ public class ProgrammeYear extends BaseEntity {
     private LocalDateTime surveyCloseDate;
     private Boolean strictAcademicStage;
     private Boolean strictCourseGroup;
+    @Column(length = 2048)
+    private String certificateTemplateUrl;
 
     @ManyToOne
     @JoinColumn(name = "programme_id")
