@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import uk.bovykina.matching_guru.dto.programme.MatchingCriteriaDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeYearCreateDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeYearResponseDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeYearUpdateDto;
+import uk.bovykina.matching_guru.dto.programme.*;
 import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
@@ -19,6 +16,7 @@ import uk.bovykina.matching_guru.util.CloudinaryService;
 import java.io.IOException;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -259,26 +257,14 @@ public class ProgrammeYearService {
         log.info("✅ ProgrammeYear deleted successfully");
     }
 
-    public String uploadAndSaveCertificateTemplate(Long programmeYearId, MultipartFile file) throws IOException {
-        log.info("📄 Uploading certificate template for programme year ID: {}", programmeYearId);
-
-        ProgrammeYear programmeYear = programmeYearRepository.findById(programmeYearId)
-                .orElseThrow(() -> {
-                    log.error("❌ Programme year not found with ID: {}", programmeYearId);
-                    return new NoSuchElementException("Programme year not found.");
-                });
-
-        String templateUrl = cloudinaryService.uploadImage(file, "certificate_templates");
-
-        programmeYear.setCertificateTemplateUrl(templateUrl);
-        programmeYearRepository.save(programmeYear);
-
-        log.info("✅ Certificate template uploaded successfully for programme year ID: {}", programmeYearId);
-        return templateUrl;
-    }
-
     public String uploadCertificateTemplate(MultipartFile file) throws IOException {
         return cloudinaryService.uploadImage(file, "certificate_templates");
+    }
+
+    public Optional<ProgrammeYearDto> findLatestByProgrammeId(Long programmeId) {
+        return programmeYearRepository
+                .findFirstByProgrammeIdOrderByCreatedAtDesc(programmeId)
+                .map(this::toProgrammeYearDto);
     }
 
 
@@ -345,6 +331,39 @@ public class ProgrammeYearService {
 
         int unmatchedCount = participantRepository.countByProgrammeYearIdAndIsMatchedFalse(programmeYear.getId());
         dto.setUnmatchedCount(unmatchedCount);
+
+        return dto;
+    }
+
+    private ProgrammeYearDto toProgrammeYearDto(ProgrammeYear programmeYear) {
+        ProgrammeYearDto dto = new ProgrammeYearDto();
+
+        dto.setId(programmeYear.getId());
+        dto.setAcademicYear(programmeYear.getAcademicYear());
+        dto.setIsActive(programmeYear.getIsActive());
+        dto.setStartDate(programmeYear.getStartDate());
+        dto.setEndDate(programmeYear.getEndDate());
+        dto.setSignupOpenDate(programmeYear.getSignupOpenDate());
+        dto.setSignupCloseDate(programmeYear.getSignupCloseDate());
+        dto.setPreferredAlgorithm(programmeYear.getPreferredAlgorithm());
+        dto.setJoinCode(programmeYear.getJoinCode());
+        dto.setSurveyUrl(programmeYear.getSurveyUrl());
+        dto.setStrictAcademicStage(programmeYear.getStrictAcademicStage());
+        dto.setStrictCourseGroup(programmeYear.getStrictCourseGroup());
+        dto.setCertificateTemplateUrl(programmeYear.getCertificateTemplateUrl());
+        dto.setMatchApprovalType(programmeYear.getMatchApprovalType());
+        dto.setApprovalThreshold(programmeYear.getApprovalThreshold());
+
+        if (programmeYear.getProgramme() != null) {
+            dto.setProgrammeId(programmeYear.getProgramme().getId());
+            dto.setProgrammeName(programmeYear.getProgramme().getName());
+        }
+
+        List<MatchingCriteriaDto> matchingCriteria = programmeYear.getMatchingCriteria().stream()
+                .map(this::toMatchingCriteriaDto)
+                .collect(Collectors.toList());
+
+        dto.setMatchingCriteria(matchingCriteria);
 
         return dto;
     }

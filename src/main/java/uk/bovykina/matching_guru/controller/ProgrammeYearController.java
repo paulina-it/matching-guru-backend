@@ -53,6 +53,9 @@ public class ProgrammeYearController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Retreive matching criteria by programme year ID.
+     */
     @GetMapping("/{programmeYearId}/matching-criteria")
     public ResponseEntity<?> getMatchingCriteria(@PathVariable Long programmeYearId) {
         try {
@@ -82,4 +85,15 @@ public class ProgrammeYearController {
         programmeYearService.deleteProgrammeYear(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Retrieve the latest ProgrammeYear by Programme ID.
+     */
+    @GetMapping("/programmes/{programmeId}/latest-year")
+    public ResponseEntity<ProgrammeYearDto> getLatestProgrammeYear(@PathVariable Long programmeId) {
+        return programmeYearService.findLatestByProgrammeId(programmeId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
 }

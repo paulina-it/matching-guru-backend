@@ -14,7 +14,7 @@ public interface ProgrammeYearRepository extends JpaRepository<ProgrammeYear, Lo
     Optional<ProgrammeYear> findProgrammeYearById(Long id);
     List<ProgrammeYear> findProgrammeYearByProgrammeId(Long programmeId);
     List<ProgrammeYear> findByProgramme_Organisation_Id(Long oeganisationId);
-
+    Optional<ProgrammeYear> findFirstByProgrammeIdOrderByCreatedAtDesc(Long programmeId);
     @Query("SELECT py FROM ProgrammeYear py WHERE py.programme.organisation.id = :orgId AND py.isActive = true")
     List<ProgrammeYear> findByProgrammeOrganisationIdAndIsActiveTrue(@Param("orgId") Long organisationId);
 }
