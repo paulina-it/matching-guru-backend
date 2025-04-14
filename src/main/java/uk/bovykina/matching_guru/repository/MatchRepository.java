@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import uk.bovykina.matching_guru.entity.Match;
@@ -51,5 +52,9 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
 
     @Query("SELECT COUNT(m) > 0 FROM Match m WHERE m.mentor.id = :mentorId AND m.mentee.id = :menteeId")
     boolean existsByMentorIdAndMenteeId(@Param("mentorId") Long mentorId, @Param("menteeId") Long menteeId);
+
+    @Modifying
+    @Query("DELETE FROM Match m WHERE m.programmeYear.id = :programmeYearId")
+    void deleteByProgrammeYearId(@Param("programmeYearId") Long programmeYearId);
 
 }

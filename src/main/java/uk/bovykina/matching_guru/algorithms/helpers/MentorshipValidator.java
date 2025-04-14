@@ -6,6 +6,7 @@ import uk.bovykina.matching_guru.entity.enums.AcademicStage;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class MentorshipValidator {
@@ -39,26 +40,19 @@ public class MentorshipValidator {
             return false;
         }
 
-        if (mentor.getCourse().getId().equals(mentee.getCourse().getId())) {
-            return true;
-        }
-
-        boolean groupMatch = mentor.getCourseGroup() != null &&
-                mentee.getCourseGroup() != null &&
-                mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId());
-
         if (strictCourseGroup) {
-            if (!groupMatch) {
-                System.out.println("❌ Course group mismatch: Mentee " + mentee.getId() + " / Mentor " + mentor.getId());
+            Long mentorGroupId = mentor.getCourseGroup() != null ? mentor.getCourseGroup().getId() : null;
+            Long menteeGroupId = mentee.getCourseGroup() != null ? mentee.getCourseGroup().getId() : null;
+
+            if (!Objects.equals(mentorGroupId, menteeGroupId)) {
+                System.out.println("❌ Skipping pair due to course group mismatch");
+                System.out.printf("Mentor %d in group %s, Mentee %d in group %s%n",
+                        mentor.getId(), mentorGroupId, mentee.getId(), menteeGroupId);
+                return false;
             }
-            return groupMatch;
         }
-
+        System.out.println("✅ Valid match: " + mentor.getId() + " + " + mentee.getId());
         return true;
-    }
-
-    public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee) {
-        return isCompatible(mentor, mentee, true, true);
     }
 
     public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, boolean strictCourseGroup) {

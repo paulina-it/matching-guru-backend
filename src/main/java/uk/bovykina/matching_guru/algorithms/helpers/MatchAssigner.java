@@ -15,8 +15,8 @@ import java.util.*;
 @Slf4j
 @RequiredArgsConstructor
 public class MatchAssigner {
-    private static final double MIN_SCORE = 0;
-    private static final double FALLBACK_SCORE = 0;
+    private static final double MIN_SCORE = 10;
+    private static final double FALLBACK_SCORE = 5;
 
     private final MentorshipValidator mentorshipValidator;
 
@@ -112,10 +112,22 @@ public class MatchAssigner {
             for (ParticipantInProgrammeYear mentor : shuffledMentors) {
                 if (mentee.getUser().getId().equals(mentor.getUser().getId())) continue;
 
-                int allowed = mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1;
+                if (mentor.getMenteesNumber() != null && mentor.getMenteesNumber() > 3) {
+                    log.warn("⚠ Mentor {} has menteesNumber = {}, but max allowed is 3", mentor.getId(), mentor.getMenteesNumber());
+                }
+
+                int allowed = mentor.getMenteesNumber() != null ? Math.min(mentor.getMenteesNumber(), 3) : 1;
                 if (mentorLoad.getOrDefault(mentor, 0) >= allowed) continue;
 
-                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictCourseGroup)) continue;
+                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictCourseGroup)) {
+                    log.debug("⛔ Skipping incompatible match: Mentor {} (group {}) ↔ Mentee {} (group {})",
+                            mentor.getId(),
+                            mentor.getCourseGroup() != null ? mentor.getCourseGroup().getId() : "null",
+                            mentee.getId(),
+                            mentee.getCourseGroup() != null ? mentee.getCourseGroup().getId() : "null"
+                    );
+                    continue;
+                }
 
                 double score = scores.getOrDefault(mentor, Map.of()).getOrDefault(mentee, 0.0);
                 if (score >= minScore) {
@@ -141,14 +153,22 @@ public class MatchAssigner {
             if (bestMentor != null) {
                 matches.put(mentee, bestMentor);
                 mentorLoad.put(bestMentor, mentorLoad.get(bestMentor) + 1);
-                if (isFallbackPhase) {
-                    log.info("🟡 Fallback match: Mentee {} → Mentor {} (score = {})", mentee.getId(), bestMentor.getId(), bestScore);
-                } else {
-                    log.info("🔵 Primary match: Mentee {} → Mentor {} (score = {})", mentee.getId(), bestMentor.getId(), bestScore);
-                }
+
+                log.info("{} match: Mentee {} (group {}) → Mentor {} (group {}) (score = {})",
+                        isFallbackPhase ? "🟡 Fallback" : "🔵 Primary",
+                        mentee.getId(),
+                        mentee.getCourseGroup() != null ? mentee.getCourseGroup().getId() : "null",
+                        bestMentor.getId(),
+                        bestMentor.getCourseGroup() != null ? bestMentor.getCourseGroup().getId() : "null",
+                        bestScore
+                );
             } else {
-                log.warn("❌ No match found for Mentee {}", mentee.getId());
+                log.warn("❌ No match found for Mentee {} (group {})",
+                        mentee.getId(),
+                        mentee.getCourseGroup() != null ? mentee.getCourseGroup().getId() : "null"
+                );
             }
         }
     }
+
 }

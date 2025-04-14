@@ -81,4 +81,10 @@ public class MatchController {
         return ResponseEntity.ok(matchService.searchMatches(programmeYearId, query, status, page, size, sortBy, sortOrder));
     }
 
+    @DeleteMapping("/programmeYear/{programmeYearId}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<String> deleteMatchesByProgrammeYear(@PathVariable Long programmeYearId) {
+        matchService.deleteMatchesByProgrammeYear(programmeYearId);
+        return ResponseEntity.ok("All matches deleted and participants reset for ProgrammeYear ID: " + programmeYearId);
+    }
 }

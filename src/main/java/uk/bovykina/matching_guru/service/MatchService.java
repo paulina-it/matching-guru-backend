@@ -173,4 +173,16 @@ public class MatchService {
 
         return matches.map(matchMapper::toResponseDto);
     }
+
+    @Transactional
+    public void deleteMatchesByProgrammeYear(Long programmeYearId) {
+        matchRepository.deleteByProgrammeYearId(programmeYearId);
+
+        List<ParticipantInProgrammeYear> participants = participantRepository.findByProgrammeYearId(programmeYearId);
+        for (ParticipantInProgrammeYear pipy : participants) {
+            pipy.setIsMatched(false);
+        }
+        participantRepository.saveAll(participants);
+    }
+
 }
