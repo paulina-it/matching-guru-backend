@@ -12,5 +12,5 @@ public class OrganisationMatchStatsDto {
     private int totalParticipants;
     private int totalMatches;
     private double matchRatePercent;
-    private List<ProgrammeStatsDto> programmes;
+    private List<ProgrammeMatchStatsDto> programmes;
 }

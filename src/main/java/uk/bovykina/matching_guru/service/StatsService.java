@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import uk.bovykina.matching_guru.dto.stats.OrganisationMatchStatsDto;
-import uk.bovykina.matching_guru.dto.stats.ProgrammeStatsDto;
-import uk.bovykina.matching_guru.dto.stats.ProgrammeYearStatsDto;
+import uk.bovykina.matching_guru.dto.stats.ProgrammeMatchStatsDto;
+import uk.bovykina.matching_guru.dto.stats.ProgrammeYearMatchStatsDto;
 import uk.bovykina.matching_guru.entity.Organisation;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
@@ -37,7 +37,7 @@ public class StatsService {
         Map<String, List<ProgrammeYear>> groupedByProgramme = allYears.stream()
                 .collect(Collectors.groupingBy(p -> p.getProgramme().getName()));
 
-        List<ProgrammeStatsDto> programmeStatsList = new ArrayList<>();
+        List<ProgrammeMatchStatsDto> programmeStatsList = new ArrayList<>();
         int totalParticipants = 0;
         int totalMatches = 0;
 
@@ -45,13 +45,13 @@ public class StatsService {
             String programmeName = entry.getKey();
             List<ProgrammeYear> years = entry.getValue();
 
-            ProgrammeStatsDto programmeStats = new ProgrammeStatsDto();
+            ProgrammeMatchStatsDto programmeStats = new ProgrammeMatchStatsDto();
             programmeStats.setProgrammeName(programmeName);
 
             int programmeTotal = 0;
             int programmeMatches = 0;
 
-            List<ProgrammeYearStatsDto> yearStats = new ArrayList<>();
+            List<ProgrammeYearMatchStatsDto> yearStats = new ArrayList<>();
             for (ProgrammeYear year : years) {
                 int participants = participantRepository.countByProgrammeYearId(year.getId());
                 int unmatched = participantRepository.countByProgrammeYearIdAndIsMatchedFalse(year.getId());
@@ -60,7 +60,7 @@ public class StatsService {
                 programmeTotal += participants;
                 programmeMatches += matches;
 
-                ProgrammeYearStatsDto yearDto = new ProgrammeYearStatsDto();
+                ProgrammeYearMatchStatsDto yearDto = new ProgrammeYearMatchStatsDto();
                 yearDto.setAcademicYear(year.getAcademicYear());
                 yearDto.setParticipants(participants);
                 yearDto.setMatches(matches);

@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class ProgrammeYearStatsDto {
+public class ProgrammeYearMatchStatsDto {
     private String academicYear;
     private int participants;
     private int matches;

@@ -7,10 +7,10 @@ import java.util.List;
 
 @Setter
 @Getter
-public class ProgrammeStatsDto {
+public class ProgrammeMatchStatsDto {
     private String programmeName;
     private int totalParticipants;
     private int totalMatches;
     private double matchRate;
-    private List<ProgrammeYearStatsDto> years;
+    private List<ProgrammeYearMatchStatsDto> years;
 }
