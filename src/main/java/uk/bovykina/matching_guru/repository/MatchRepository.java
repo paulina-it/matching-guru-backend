@@ -20,6 +20,10 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     @EntityGraph(attributePaths = {"mentor", "mentee", "programmeYear"})
     Page<Match> findByProgrammeYearId(Long programmeYearId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"mentor", "mentee", "programmeYear"})
+    List<Match> findAllByProgrammeYearId(Long programmeYearId);
+
+
     @Query("""
                 SELECT m FROM Match m 
                 JOIN FETCH m.mentor me 

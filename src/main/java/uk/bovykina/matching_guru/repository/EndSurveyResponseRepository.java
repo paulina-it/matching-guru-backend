@@ -9,4 +9,6 @@ import java.util.List;
 public interface EndSurveyResponseRepository extends JpaRepository<EndSurveyResponse, Long> {
     List<EndSurveyResponse> findByParticipantInProgrammeId(Long participantId);
     boolean existsByParticipantInProgramme(ParticipantInProgrammeYear participant);
+    List<EndSurveyResponse> findByProgrammeYearId(Long programmeYearId);
+
 }

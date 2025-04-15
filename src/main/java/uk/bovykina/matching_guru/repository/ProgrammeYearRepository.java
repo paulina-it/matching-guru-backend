@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface ProgrammeYearRepository extends JpaRepository<ProgrammeYear, Long> {
     Optional<ProgrammeYear> findProgrammeYearByAcademicYear(String academicYear);
     Optional<ProgrammeYear> findProgrammeYearById(Long id);
+    List<ProgrammeYear> findByProgrammeId(Long programmeId);
+
     List<ProgrammeYear> findProgrammeYearByProgrammeId(Long programmeId);
     List<ProgrammeYear> findByProgramme_Organisation_Id(Long oeganisationId);
     Optional<ProgrammeYear> findFirstByProgrammeIdOrderByCreatedAtDesc(Long programmeId);
