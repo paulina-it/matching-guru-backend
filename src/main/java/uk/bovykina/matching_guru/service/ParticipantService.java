@@ -17,7 +17,6 @@ import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,7 +90,7 @@ public class ParticipantService {
                     return new IllegalArgumentException("Participant not found");
                 });
 
-        List<Match> matches = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        List<Match> matches = matchRepository.findByParticipantId(participant.getId());
         log.info("🔍 Found {} match(es) for participant ID {}: {}", matches.size(), participant.getId(), matches);
 
         if (!matches.isEmpty()) {
@@ -251,7 +250,7 @@ public class ParticipantService {
                     return new IllegalArgumentException("Participant not found");
                 });
 
-        List<Match> matches = matchRepository.findByMentorIdOrMenteeId(participant.getId());
+        List<Match> matches = matchRepository.findByParticipantId(participant.getId());
         log.info("🔍 Found {} potential match(es) for participantId={}", matches.size(), participant.getId());
 
         if (!matches.isEmpty()) {

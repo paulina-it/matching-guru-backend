@@ -198,7 +198,7 @@ class ParticipantServiceTest {
 
         when(participantRepository.findByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId()))
                 .thenReturn(Optional.of(participant));
-        when(matchRepository.findByMentorIdOrMenteeId(1L)).thenReturn(List.of(match));
+        when(matchRepository.findByParticipantId(1L)).thenReturn(List.of(match));
         when(matchService.getDetailedMatchById(10L)).thenReturn(new DetailedMatchResponseDto());
 
         Object result = participantService.getParticipantInfoByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId());
@@ -216,7 +216,7 @@ class ParticipantServiceTest {
 
         when(participantRepository.findByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId()))
                 .thenReturn(Optional.of(participant));
-        when(matchRepository.findByMentorIdOrMenteeId(1L)).thenReturn(Collections.emptyList());
+        when(matchRepository.findByParticipantId(1L)).thenReturn(Collections.emptyList());
         when(endSurveyResponseRepository.existsByParticipantInProgramme(participant)).thenReturn(false);
 
         Object result = participantService.getParticipantInfoByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId());

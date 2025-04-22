@@ -10,8 +10,10 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString(onlyExplicitlyIncluded = true)
 @Entity
+@Builder
 @Table(name = "matches", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"mentor_id", "mentee_id"})
 })

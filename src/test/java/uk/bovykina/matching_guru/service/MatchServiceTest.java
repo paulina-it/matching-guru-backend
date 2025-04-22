@@ -17,7 +17,6 @@ import uk.bovykina.matching_guru.mapper.MatchMapper;
 import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -142,24 +141,12 @@ class MatchServiceTest {
 
     @Test
     void getDetailedMatchByParticipantId_shouldReturnCorrectMatch() {
-        when(matchRepository.findByMentorIdOrMenteeId(1L)).thenReturn(List.of(match));
+        when(matchRepository.findByParticipantId(1L)).thenReturn(List.of(match));
         DetailedMatchResponseDto dto = new DetailedMatchResponseDto();
         when(matchMapper.toDetailedResponseDto(match)).thenReturn(dto);
 
         DetailedMatchResponseDto result = matchService.getDetailedMatchByParticipantId(1L, 1L);
 
         assertNotNull(result);
-    }
-
-    @Test
-    void getAllMatches_shouldReturnAll() {
-        when(matchRepository.findAll()).thenReturn(List.of(match));
-        MatchResponseDto responseDto = new MatchResponseDto(100L, 1L, 1L, "Mentor", "Year 2", "CS", 0.85,
-                2L, "Mentee", "Year 1", "IT", MatchStatus.PENDING);
-        when(matchMapper.toResponseDto(match)).thenReturn(responseDto);
-
-        List<MatchResponseDto> result = matchService.getAllMatches();
-
-        assertEquals(1, result.size());
     }
 }

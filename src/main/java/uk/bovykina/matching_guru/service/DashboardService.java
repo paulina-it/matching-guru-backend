@@ -117,7 +117,7 @@ public class DashboardService {
         String suggestedMeetingDay = null;
 
         for (ParticipantInProgrammeYear p : participations) {
-            List<Match> userMatches = matchRepository.findByMentorIdOrMenteeId(p.getId());
+            List<Match> userMatches = matchRepository.findByParticipantId(p.getId());
             boolean feedbackSubmitted = endSurveyRepository.existsByParticipantInProgramme(p);
 
             programmeSummaries.add(new ProgrammeParticipationSummaryDto(
