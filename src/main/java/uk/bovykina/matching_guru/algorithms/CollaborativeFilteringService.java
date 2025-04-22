@@ -20,14 +20,18 @@ public class CollaborativeFilteringService {
 
     private final ParticipantRepository participantRepository;
     private final ProgrammeYearService programmeYearService;
-    private final CompatibilityCalculator compatibilityCalculator;
     private final MatchSaver matchSaver;
     private final MatchingCriteriaProvider criteriaProvider;
 
     @Transactional
     public void collaborativeFilteringMatch(Long programmeYearId) {
-        List<ParticipantInProgrammeYear> mentors = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
-        List<ParticipantInProgrammeYear> mentees = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
+        List<ParticipantInProgrammeYear> mentors = participantRepository.findByProgrammeYearId(programmeYearId).stream()
+                .filter(p -> p.getRole() == ParticipantRole.MENTOR)
+                .toList();
+
+        List<ParticipantInProgrammeYear> mentees = participantRepository.findByProgrammeYearId(programmeYearId).stream()
+                .filter(p -> p.getRole() == ParticipantRole.MENTEE)
+                .toList();
 
         if (mentors.isEmpty() || mentees.isEmpty()) return;
 

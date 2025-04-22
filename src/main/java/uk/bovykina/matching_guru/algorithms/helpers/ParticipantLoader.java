@@ -16,18 +16,16 @@ public class ParticipantLoader {
     private final ParticipantRepository participantRepository;
 
     public List<ParticipantInProgrammeYear> loadMentees(Long programmeYearId) {
-        List<ParticipantInProgrammeYear> allMentees = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTEE);
-
-        return allMentees.stream()
-                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched()))) // false (unmatched) first
+        return participantRepository.findByProgrammeYearId(programmeYearId).stream()
+                .filter(p -> p.getRole() == ParticipantRole.MENTEE)
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched())))
                 .toList();
     }
 
     public List<ParticipantInProgrammeYear> loadMentors(Long programmeYearId) {
-        List<ParticipantInProgrammeYear> allMentors = participantRepository.findByProgrammeYearIdAndRole(programmeYearId, ParticipantRole.MENTOR);
-
-        return allMentors.stream()
-                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched()))) // false (unmatched) first
+        return participantRepository.findByProgrammeYearId(programmeYearId).stream()
+                .filter(p -> p.getRole() == ParticipantRole.MENTOR)
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getIsMatched())))
                 .toList();
     }
 }

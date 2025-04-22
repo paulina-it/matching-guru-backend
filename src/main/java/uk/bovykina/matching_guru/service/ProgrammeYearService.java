@@ -324,12 +324,11 @@ public class ProgrammeYearService {
         dto.setCertificateTemplateUrl(programmeYear.getCertificateTemplateUrl());
 
         int participantCount = participantRepository.countByProgrammeYearId(programmeYear.getId());
+        int matchedCount = participantRepository.countMatchedInProgrammeYear(programmeYear.getId());
+        int unmatchedCount = participantCount - matchedCount;
+
         dto.setParticipantCount(participantCount);
-
-        boolean hasMatches = matchRepository.existsByProgrammeYearId(programmeYear.getId());
-        dto.setInitialMatchingIsDone(hasMatches);
-
-        int unmatchedCount = participantRepository.countByProgrammeYearIdAndIsMatchedFalse(programmeYear.getId());
+        dto.setInitialMatchingIsDone(matchRepository.existsByProgrammeYearId(programmeYear.getId()));
         dto.setUnmatchedCount(unmatchedCount);
 
         return dto;

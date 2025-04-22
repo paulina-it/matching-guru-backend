@@ -1,4 +1,3 @@
-// Refactored Gale-Shapley with modular helpers and high match rate preserved
 package uk.bovykina.matching_guru.algorithms;
 
 import lombok.RequiredArgsConstructor;
@@ -60,11 +59,12 @@ public class GaleShapleyService {
     }
 
     private List<ParticipantInProgrammeYear> loadParticipants(Long programmeYearId, ParticipantRole role, boolean isInitialMatching) {
-        return participantRepository.findByProgrammeYearIdAndRole(programmeYearId, role).stream()
+        return participantRepository.findByProgrammeYearId(programmeYearId).stream()
+                .filter(p -> p.getRole() == role)
                 .filter(p -> isInitialMatching || !Boolean.TRUE.equals(p.getIsMatched()))
-                .collect(Collectors.toList());
+                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
+                .toList();
     }
-
     private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> runGaleShapley(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
@@ -154,7 +154,6 @@ public class GaleShapleyService {
                 log.info("🟡 Fallback match: Mentee {} → Mentor {} (score = {})", mentee.getId(), mentor.getId(), score);
             });
         }
-
 
         // Logging unmatched
         mentees.stream()

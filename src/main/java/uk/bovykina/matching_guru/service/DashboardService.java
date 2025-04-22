@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -39,18 +40,32 @@ public class DashboardService {
                 programmeYearRepository.findByProgrammeOrganisationIdAndIsActiveTrue(organisationId);
         log.info("✅ Found {} active programme years", activeProgrammeYears.size());
 
+        List<Long> programmeYearIds = activeProgrammeYears.stream().map(ProgrammeYear::getId).toList();
+
+        Map<Long, Integer> matchedCounts = participantRepository.countMatchedByProgrammeYears(programmeYearIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Long) row[1]).intValue()
+                ));
+
+        Map<Long, Integer> participantCounts = participantRepository.countParticipantsByProgrammeYears(programmeYearIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Long) row[1]).intValue()
+                ));
+
         List<ProgrammeYearSummaryDto> summaries = activeProgrammeYears.stream().limit(5).map(py -> {
-            int participantCount = participantRepository.countByProgrammeYearId(py.getId());
-            int matchesCount = participantRepository.countByProgrammeYearIdAndIsMatchedTrue(py.getId());
+            Long pyId = py.getId();
             return new ProgrammeYearSummaryDto(
-                    py.getId(),
+                    pyId,
                     py.getProgramme().getId(),
                     py.getProgramme().getName() + " " + py.getAcademicYear(),
                     Boolean.TRUE.equals(py.getIsActive()),
-                    participantCount,
-                    matchesCount
+                    participantCounts.getOrDefault(pyId, 0),
+                    matchedCounts.getOrDefault(pyId, 0)
             );
-        }).collect(Collectors.toList());
+        }).toList();
+
 
         List<ActivityJoinProjection> joinProjections =
                 participantRepository.findRecentJoinsByOrganisationId(organisationId, LocalDateTime.now().minusDays(21));
@@ -58,7 +73,6 @@ public class DashboardService {
 
         List<RecentActivityDto> activity = new ArrayList<>();
 
-        // Add join activity with links
         joinProjections.stream()
                 .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
                 .limit(5)
@@ -70,7 +84,6 @@ public class DashboardService {
                         )
                 ));
 
-        // Add pending matches activity with links
         activeProgrammeYears.forEach(py -> {
             int pendingCount = matchRepository.countPendingMatches(py.getId());
             if (pendingCount > 0) {
@@ -113,8 +126,6 @@ public class DashboardService {
         boolean hasFeedbackPending = false;
 
         LocalDateTime latestInteraction = null;
-        LocalDateTime nextSuggestedMeeting = null;
-        String suggestedMeetingDay = null;
 
         for (ParticipantInProgrammeYear p : participations) {
             List<Match> userMatches = matchRepository.findByParticipantId(p.getId());

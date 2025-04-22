@@ -37,6 +37,20 @@ public class StatsService {
         orgStats.setOrganisation(organisation.getName());
 
         List<ProgrammeYear> allYears = programmeYearRepo.findByProgramme_Organisation_Id(organisationId);
+        List<Long> yearIds = allYears.stream().map(ProgrammeYear::getId).toList();
+
+        Map<Long, Integer> participantCounts = participantRepository.countParticipantsByProgrammeYears(yearIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Long) row[1]).intValue()
+                ));
+
+        Map<Long, Integer> matchedCounts = participantRepository.countMatchedByProgrammeYears(yearIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Long) row[1]).intValue()
+                ));
+
         Map<String, List<ProgrammeYear>> groupedByProgramme = allYears.stream()
                 .collect(Collectors.groupingBy(p -> p.getProgramme().getName()));
 
@@ -56,9 +70,9 @@ public class StatsService {
 
             List<ProgrammeYearMatchStatsDto> yearStats = new ArrayList<>();
             for (ProgrammeYear year : years) {
-                int participants = participantRepository.countByProgrammeYearId(year.getId());
-                int unmatched = participantRepository.countByProgrammeYearIdAndIsMatchedFalse(year.getId());
-                int matches = participants - unmatched;
+                long yearId = year.getId();
+                int participants = participantCounts.getOrDefault(yearId, 0);
+                int matches = matchedCounts.getOrDefault(yearId, 0);
 
                 programmeTotal += participants;
                 programmeMatches += matches;
@@ -93,6 +107,7 @@ public class StatsService {
 
         return orgStats;
     }
+
 
     public OrganisationEngagementStatsDto getOrganisationEngagementStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)

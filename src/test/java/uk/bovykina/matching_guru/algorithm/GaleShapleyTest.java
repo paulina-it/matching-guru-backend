@@ -29,7 +29,6 @@ public class GaleShapleyTest {
     private MatchingCriteriaProvider criteriaProvider;
     private MatchSaver matchSaver;
     private ProgrammeYearService programmeYearService;
-
     private GaleShapleyService galeShapleyService;
     private ProgrammeYear programmeYear;
 
@@ -71,8 +70,8 @@ public class GaleShapleyTest {
         ParticipantInProgrammeYear matchedMentee = createParticipant(201L, ParticipantRole.MENTEE, true);
         ParticipantInProgrammeYear unmatchedMentee = createParticipant(202L, ParticipantRole.MENTEE, false);
 
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTOR)).thenReturn(List.of(mentor));
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTEE)).thenReturn(List.of(matchedMentee, unmatchedMentee));
+        setupMockParticipants(List.of(mentor), List.of(matchedMentee, unmatchedMentee));
+
         when(mentorshipValidator.isCompatible(any(), any(), anyBoolean())).thenReturn(true);
         when(compatibilityService.calculate(any(), any(), anyMap())).thenReturn(0.9);
 
@@ -83,7 +82,6 @@ public class GaleShapleyTest {
         verify(matchSaver).saveMatches(eq(1L), eq(programmeYear), matchCaptor.capture(), anyMap());
 
         Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> result = matchCaptor.getValue();
-
         assertThat(result).containsKey(mentor);
         assertThat(result.get(mentor)).hasSize(1);
         assertThat(result.get(mentor).get(0).getId()).isEqualTo(unmatchedMentee.getId());
@@ -91,11 +89,8 @@ public class GaleShapleyTest {
 
     @Test
     void shouldSkipIfNoMentorsOrMentees() {
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTOR)).thenReturn(List.of());
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTEE)).thenReturn(List.of());
-
+        setupMockParticipants(List.of(), List.of());
         galeShapleyService.matchParticipants(1L, true);
-
         verifyNoInteractions(matchSaver);
     }
 
@@ -106,8 +101,8 @@ public class GaleShapleyTest {
 
         ParticipantInProgrammeYear mentee = createParticipant(201L, ParticipantRole.MENTEE, false);
 
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTOR)).thenReturn(List.of(mentor));
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTEE)).thenReturn(List.of(mentee));
+        setupMockParticipants(List.of(mentor), List.of(mentee));
+
         when(mentorshipValidator.isCompatible(any(), any(), anyBoolean())).thenReturn(true);
         when(compatibilityService.calculate(any(), any(), anyMap())).thenReturn(0.9);
 
@@ -126,8 +121,7 @@ public class GaleShapleyTest {
 
         ParticipantInProgrammeYear mentee = createParticipant(201L, ParticipantRole.MENTEE, false);
 
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTOR)).thenReturn(List.of(mentor));
-        when(participantRepository.findByProgrammeYearIdAndRole(1L, ParticipantRole.MENTEE)).thenReturn(List.of(mentee));
+        setupMockParticipants(List.of(mentor), List.of(mentee));
         when(mentorshipValidator.isCompatible(any(), any(), anyBoolean())).thenReturn(false);
 
         ArgumentCaptor<Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>>> matchCaptor = ArgumentCaptor.forClass(Map.class);
@@ -149,5 +143,13 @@ public class GaleShapleyTest {
         participant.setUser(user);
 
         return participant;
+    }
+
+    private void setupMockParticipants(List<ParticipantInProgrammeYear> mentors, List<ParticipantInProgrammeYear> mentees) {
+        List<ParticipantInProgrammeYear> all = new ArrayList<>();
+        all.addAll(mentors);
+        all.addAll(mentees);
+
+        when(participantRepository.findByProgrammeYearId(1L)).thenReturn(all);
     }
 }
