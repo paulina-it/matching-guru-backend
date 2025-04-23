@@ -2,6 +2,7 @@ package uk.bovykina.matching_guru.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -134,10 +135,8 @@ class UserServiceTest {
     void resetPassword_shouldUpdateAuthRecord() {
         when(authRepository.findByUserId(1L)).thenReturn(Optional.of(auth));
         when(passwordEncoder.encode("newpassword")).thenReturn("newhashed");
-
-        userService.resetPassword(1L, "newpassword");
-
-        verify(authRepository).save(any(Auth.class));
+        ArgumentCaptor<Auth> captor = ArgumentCaptor.forClass(Auth.class);
+        verify(authRepository).save(captor.capture());
     }
 
     @Test

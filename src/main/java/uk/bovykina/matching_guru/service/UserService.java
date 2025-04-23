@@ -219,8 +219,8 @@ public class UserService {
      * Resets a user’s password.
      */
     @Transactional
-    public void resetPassword(Long userId, String newPassword) {
-        log.info("🔒 Resetting password for user ID: {}", userId);
+    public void changeOwnPassword(Long userId, String oldPassword, String newPassword) {
+        log.info("🔐 User-initiated password change for user ID: {}", userId);
 
         Auth auth = authRepository.findByUserId(userId)
                 .orElseThrow(() -> {
@@ -228,8 +228,14 @@ public class UserService {
                     return new UserNotFoundException("Auth record not found.");
                 });
 
+        if (!passwordEncoder.matches(oldPassword, auth.getPasswordHash())) {
+            log.warn("❌ Incorrect old password provided by user ID: {}", userId);
+            throw new IllegalArgumentException("Old password is incorrect");
+        }
+
         auth.setPasswordHash(passwordEncoder.encode(newPassword));
         authRepository.save(auth);
-        log.info("✅ Password reset successful for user ID: {}", userId);
+        log.info("✅ Password successfully changed for user ID: {}", userId);
     }
+
 }

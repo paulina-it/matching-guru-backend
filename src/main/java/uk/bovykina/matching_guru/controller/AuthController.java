@@ -9,10 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationDto;
-import uk.bovykina.matching_guru.dto.user.LoginResponse;
-import uk.bovykina.matching_guru.dto.user.UserCreateDto;
-import uk.bovykina.matching_guru.dto.user.UserLoginDto;
-import uk.bovykina.matching_guru.dto.user.UserResponseDto;
+import uk.bovykina.matching_guru.dto.user.*;
 import uk.bovykina.matching_guru.entity.enums.UserRole;
 import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.service.OrganisationService;
@@ -95,6 +92,30 @@ public class AuthController {
         } catch (Exception e) {
             logger.error("❌ Signup error for email: {} - {}", userCreateDto.getEmail(), e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Handles user password change using old password.
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User not authenticated");
+        }
+
+        try {
+            String email = auth.getName();
+            Long userId = userService.getUserByEmail(email).getId();
+            userService.changeOwnPassword(userId, dto.getOldPassword(), dto.getNewPassword());
+            return ResponseEntity.ok("Password changed successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Password change failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
         }
     }
 
