@@ -22,4 +22,5 @@ public class ParticipantUpdateDto {
     private TimeRange timeRange;
     private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
+    private Gender genderPreference;
 }

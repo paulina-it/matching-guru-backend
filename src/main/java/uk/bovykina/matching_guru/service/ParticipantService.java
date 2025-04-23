@@ -17,6 +17,7 @@ import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -49,31 +50,31 @@ public class ParticipantService {
         participant.setUser(user);
         participant.setProgrammeYear(programmeYear);
         participant.setRole(createDto.getRole());
-        participant.setMenteesNumber(createDto.getMenteesNumber() != null ? createDto.getMenteesNumber() : 0);
-        participant.setIsMatched(createDto.getIsMatched() != null ? createDto.getIsMatched() : false);
+        participant.setMenteesNumber(Optional.ofNullable(createDto.getMenteesNumber()).orElse(0));
+        participant.setIsMatched(Optional.ofNullable(createDto.getIsMatched()).orElse(false));
         participant.setAcademicStage(createDto.getAcademicStage());
         participant.setHadPlacement(createDto.getHadPlacement());
         participant.setPlacementDescription(createDto.getPlacementDescription());
         participant.setMotivation(createDto.getMotivation());
-//        participant.setWasMatchedLastYear(createDto.getWasMatchedLastYear());
         participant.setAvailableDays(createDto.getAvailableDays());
         participant.setTimeRange(createDto.getTimeRange());
         participant.setMeetingsFrequency(createDto.getMeetingsFrequency());
         participant.setSkills(createDto.getSkills());
+        participant.setGenderPreference(createDto.getGenderPreference());
 
-        boolean wasUnmatchedInPast = participantRepository
-                .findByUserId(user.getId()).stream()
+        boolean wasUnmatchedInPast = participantRepository.findAllByUserId(user.getId()).stream()
                 .filter(p -> !p.getProgrammeYear().getId().equals(programmeYear.getId()))
                 .filter(p -> p.getProgrammeYear().getProgramme().getId().equals(programmeYear.getProgramme().getId()))
                 .anyMatch(p -> Boolean.FALSE.equals(p.getIsMatched()));
 
         participant.setWasMatchedLastYear(!wasUnmatchedInPast);
 
-        ParticipantInProgrammeYear savedParticipant = participantRepository.save(participant);
-        log.info("Participant created successfully for User ID: {}", createDto.getUserId());
+        ParticipantInProgrammeYear saved = participantRepository.save(participant);
+        log.info("✅ Participant created successfully for User ID: {}", createDto.getUserId());
 
-        return toParticipantResponseDto(savedParticipant);
+        return toParticipantResponseDto(saved);
     }
+
 
     public ParticipantResponseDto getParticipant(Long id) {
         return participantRepository.findById(id)
@@ -139,6 +140,7 @@ public class ParticipantService {
         if (updateDto.getMeetingsFrequency() != null)
             participant.setMeetingsFrequency(updateDto.getMeetingsFrequency());
         if (updateDto.getSkills() != null) participant.setSkills(updateDto.getSkills());
+        if (updateDto.getGenderPreference() != null) participant.setGenderPreference(updateDto.getGenderPreference());
 
         ParticipantInProgrammeYear updatedParticipant = participantRepository.save(participant);
         return toParticipantResponseDto(updatedParticipant);
@@ -236,6 +238,7 @@ public class ParticipantService {
         dto.setSkills(participant.getSkills());
         boolean hasFeedback = endSurveyResponseRepository.existsByParticipantInProgramme(participant);
         dto.setHasSubmittedFeedback(hasFeedback);
+        dto.setGenderPreference(participant.getGenderPreference());
 
         return dto;
     }

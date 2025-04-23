@@ -32,6 +32,7 @@ public class ParticipantCreateDto {
     private TimeRange timeRange;
     private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
+    private Gender genderPreference;
 
 //    User-related
     private Gender gender;

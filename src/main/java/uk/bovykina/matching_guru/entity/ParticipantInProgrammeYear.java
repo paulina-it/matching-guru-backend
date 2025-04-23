@@ -50,6 +50,8 @@ public class ParticipantInProgrammeYear extends BaseEntity {
     private String placementDescription;
     private String motivation;
     private Boolean wasMatchedLastYear;
+    @Enumerated(EnumType.STRING)
+    private Gender genderPreference;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "participant_availability_days", joinColumns = @JoinColumn(name = "participant_id"))

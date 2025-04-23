@@ -43,4 +43,5 @@ public class ParticipantResponseDto {
     private MeetingFrequency meetingsFrequency;
     private Set<Skill> skills;
     private boolean hasSubmittedFeedback;
+    private Gender genderPreference;
 }
