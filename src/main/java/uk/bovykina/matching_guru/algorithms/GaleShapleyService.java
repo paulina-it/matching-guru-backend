@@ -10,6 +10,7 @@ import uk.bovykina.matching_guru.algorithms.interfaces.CompatibilityCalculator;
 import uk.bovykina.matching_guru.algorithms.helpers.MatchingCriteriaProvider;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.entity.enums.Gender;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.service.ProgrammeYearService;
@@ -65,6 +66,7 @@ public class GaleShapleyService {
                 .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
                 .toList();
     }
+
     private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> runGaleShapley(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
@@ -78,11 +80,30 @@ public class GaleShapleyService {
             int allowed = mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1;
             mentorLoad.put(mentor, 0);
 
-            List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream().filter(mentee -> {
+            List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream()
+                    .filter(mentee -> {
                         if (mentor.getUser().getId().equals(mentee.getUser().getId())) return false;
+                        var menteePref = mentee.getGenderPreference();
+                        var mentorPref = mentor.getGenderPreference();
+                        var mentorGender = mentor.getUser().getGender();
+                        var menteeGender = mentee.getUser().getGender();
+
+                        if (menteePref != null && menteePref != Gender.PREFER_NOT_TO_SAY &&
+                                (mentorGender == null || menteePref != mentorGender)) {
+                            log.debug("🚫 Mentee {} prefers {}, but Mentor {} is {}", mentee.getId(), menteePref, mentor.getId(), mentorGender);
+                            return false;
+                        }
+
+                        if (mentorPref != null && mentorPref != Gender.PREFER_NOT_TO_SAY &&
+                                (menteeGender == null || mentorPref != menteeGender)) {
+                            log.debug("🚫 Mentor {} prefers {}, but Mentee {} is {}", mentor.getId(), mentorPref, mentee.getId(), menteeGender);
+                            return false;
+                        }
+
                         if (!mentorshipValidator.isCompatible(mentor, mentee, true)) return false;
                         return compatibilityService.calculate(mentor, mentee, weights) > 0;
                     })
+
                     .sorted(Comparator.comparingDouble(mentee -> -compatibilityService.calculate(mentor, mentee, weights)))
                     .limit(5)
                     .collect(Collectors.toList());
@@ -140,7 +161,12 @@ public class GaleShapleyService {
             Optional<ParticipantInProgrammeYear> bestFallbackMentor = mentors.stream()
                     .filter(mentor -> !mentor.getUser().getId().equals(mentee.getUser().getId()))
                     .filter(mentor -> mentorLoad.getOrDefault(mentor, 0) < (mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1))
-                    .filter(mentor -> mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage()))
+                    .filter(mentor -> {
+                        var preferred = mentee.getGenderPreference();
+                        var mentorGender = mentor.getUser().getGender();
+                        return (preferred == null || preferred.name().equals("PREFER_NOT_TO_SAY") || preferred == mentorGender)
+                                && mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage());
+                    })
                     .filter(mentor -> mentor.getCourseGroup() != null && mentee.getCourseGroup() != null &&
                             mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId()))
                     .sorted(Comparator.comparingDouble((ParticipantInProgrammeYear mentor) ->

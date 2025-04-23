@@ -35,10 +35,47 @@ public class CompatibilityMatrixBuilder {
         for (ParticipantInProgrammeYear mentor : mentors) {
             Map<ParticipantInProgrammeYear, Double> mentorScores = new HashMap<>();
             for (ParticipantInProgrammeYear mentee : mentees) {
-                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictGroup)) continue;
+                Long mentorId = mentor.getUser().getId();
+                Long menteeId = mentee.getUser().getId();
 
+                if (mentorId.equals(menteeId)) {
+                    log.debug("⛔ Skipping self-match: Mentor {} and Mentee {}", mentorId, menteeId);
+                    continue;
+                }
+
+                var menteePreference = mentee.getGenderPreference();
+                var mentorGender = mentor.getUser().getGender();
+                if (menteePreference != null &&
+                        !menteePreference.name().equalsIgnoreCase("PREFER_NOT_TO_SAY") &&
+                        (mentorGender == null || !menteePreference.equals(mentorGender))) {
+
+                    log.debug("🚫 Skipping match due to mentee's gender preference: Mentee {} prefers {}, but Mentor {} is {}",
+                            menteeId, menteePreference, mentorId, mentorGender);
+                    continue;
+                }
+
+                var mentorPreference = mentor.getGenderPreference();
+                var menteeGender = mentee.getUser().getGender();
+                if (mentorPreference != null &&
+                        !mentorPreference.name().equalsIgnoreCase("PREFER_NOT_TO_SAY") &&
+                        (menteeGender == null || !mentorPreference.equals(menteeGender))) {
+
+                    log.debug("🚫 Skipping match due to mentor's gender preference: Mentor {} prefers {}, but Mentee {} is {}",
+                            mentorId, mentorPreference, menteeId, menteeGender);
+                    continue;
+                }
+
+                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictGroup)) {
+                    log.debug("🚫 Mentor {} and Mentee {} failed structural compatibility check", mentorId, menteeId);
+                    continue;
+                }
                 double score = compatibilityCalculator.calculate(mentor, mentee, weights);
-                if (score > 0) mentorScores.put(mentee, score);
+                if (score > 0) {
+                    mentorScores.put(mentee, score);
+                    log.debug("✅ Match added: Mentor {} → Mentee {} (score = {})", mentorId, menteeId, score);
+                } else {
+                    log.debug("⚠ Match skipped: Mentor {} → Mentee {} (score = 0)", mentorId, menteeId);
+                }
             }
             scores.put(mentor, mentorScores);
         }
