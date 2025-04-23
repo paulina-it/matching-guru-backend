@@ -8,9 +8,11 @@ import uk.bovykina.matching_guru.algorithms.helpers.MatchSaver;
 import uk.bovykina.matching_guru.algorithms.helpers.MentorshipValidator;
 import uk.bovykina.matching_guru.algorithms.interfaces.CompatibilityCalculator;
 import uk.bovykina.matching_guru.algorithms.helpers.MatchingCriteriaProvider;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
+import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.service.ProgrammeYearService;
 
@@ -29,10 +31,11 @@ public class GaleShapleyService {
     private final MatchingCriteriaProvider criteriaProvider;
     private final MatchSaver matchSaver;
     private final ProgrammeYearService programmeYearService;
+    private final MatchRepository matchRepository;
 
     @Transactional
     public void matchParticipants(Long programmeYearId, boolean isInitialMatching) {
-        log.info("▶ Starting Gale-Shapley for ProgrammeYear ID: {} | Initial: {}", programmeYearId, isInitialMatching);
+        log.info("\u25B6 Starting Gale-Shapley for ProgrammeYear ID: {} | Initial: {}", programmeYearId, isInitialMatching);
 
         ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
 
@@ -47,7 +50,7 @@ public class GaleShapleyService {
                 .collect(Collectors.toList());
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
-            log.warn("⚠ Not enough participants to match");
+            log.warn("\u26A0 Not enough participants to match");
             return;
         }
 
@@ -55,7 +58,7 @@ public class GaleShapleyService {
         Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> matches = runGaleShapley(mentors, mentees, weights);
 
         matchSaver.saveMatches(programmeYearId, programmeYear, matches, weights);
-        log.info("✔ Matching complete for ProgrammeYear ID: {}", programmeYearId);
+        log.info("\u2714 Matching complete for ProgrammeYear ID: {}", programmeYearId);
     }
 
     private List<ParticipantInProgrammeYear> loadParticipants(Long programmeYearId, ParticipantRole role, boolean isInitialMatching) {
@@ -65,6 +68,7 @@ public class GaleShapleyService {
                 .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
                 .toList();
     }
+
     private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> runGaleShapley(
             List<ParticipantInProgrammeYear> mentors,
             List<ParticipantInProgrammeYear> mentees,
@@ -80,6 +84,8 @@ public class GaleShapleyService {
 
             List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream().filter(mentee -> {
                         if (mentor.getUser().getId().equals(mentee.getUser().getId())) return false;
+                        if (matchRepository.existsByMentorIdAndMenteeIdAndStatusIn(mentor.getId(), mentee.getId(), List.of(MatchStatus.DECLINED)))
+                            return false;
                         if (!mentorshipValidator.isCompatible(mentor, mentee, true)) return false;
                         return compatibilityService.calculate(mentor, mentee, weights) > 0;
                     })
@@ -87,14 +93,13 @@ public class GaleShapleyService {
                     .limit(5)
                     .collect(Collectors.toList());
 
-//            Collections.shuffle(compatibleMentees);
             if (!compatibleMentees.isEmpty()) {
                 mentorPreferences.put(mentor, new LinkedList<>(compatibleMentees));
             }
         }
 
         Queue<ParticipantInProgrammeYear> freeMentors = new LinkedList<>(mentorPreferences.keySet());
-        log.info("🔄 Starting Gale-Shapley algorithm with {} active mentors", freeMentors.size());
+        log.info("\uD83D\uDD04 Starting Gale-Shapley algorithm with {} active mentors", freeMentors.size());
 
         while (!freeMentors.isEmpty()) {
             ParticipantInProgrammeYear mentor = freeMentors.poll();
@@ -104,7 +109,7 @@ public class GaleShapleyService {
             int currentLoad = mentorLoad.getOrDefault(mentor, 0);
 
             if (preferences == null || preferences.isEmpty() || currentLoad >= allowed) {
-                log.debug("🚫 Mentor {} has no more capacity or preferences left", mentor.getId());
+                log.debug("\u274C Mentor {} has no more capacity or preferences left", mentor.getId());
                 continue;
             }
 
@@ -121,7 +126,7 @@ public class GaleShapleyService {
                 matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
                 mentorLoad.put(mentor, mentorLoad.get(mentor) + 1);
 
-                log.info("🔗 Created match: Mentor {} → Mentee {} (score = {})", mentor.getId(), mentee.getId(), compatibilityScore);
+                log.info("\uD83D\uDD17 Created match: Mentor {} → Mentee {} (score = {})", mentor.getId(), mentee.getId(), compatibilityScore);
 
                 if (mentorLoad.get(mentor) < allowed && !preferences.isEmpty()) {
                     freeMentors.add(mentor);
@@ -131,7 +136,6 @@ public class GaleShapleyService {
             }
         }
 
-        // Fallback Phase: Unmatched Mentees
         List<ParticipantInProgrammeYear> unmatchedMentees = mentees.stream()
                 .filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m)))
                 .toList();
@@ -140,6 +144,7 @@ public class GaleShapleyService {
             Optional<ParticipantInProgrammeYear> bestFallbackMentor = mentors.stream()
                     .filter(mentor -> !mentor.getUser().getId().equals(mentee.getUser().getId()))
                     .filter(mentor -> mentorLoad.getOrDefault(mentor, 0) < (mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1))
+                    .filter(mentor -> !matchRepository.existsByMentorIdAndMenteeIdAndStatusIn(mentor.getId(), mentee.getId(), List.of(MatchStatus.DECLINED)))
                     .filter(mentor -> mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage()))
                     .filter(mentor -> mentor.getCourseGroup() != null && mentee.getCourseGroup() != null &&
                             mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId()))
@@ -151,14 +156,13 @@ public class GaleShapleyService {
                 matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
                 mentorLoad.put(mentor, mentorLoad.getOrDefault(mentor, 0) + 1);
                 double score = compatibilityService.calculate(mentor, mentee, weights);
-                log.info("🟡 Fallback match: Mentee {} → Mentor {} (score = {})", mentee.getId(), mentor.getId(), score);
+                log.info("\uD83D\uDFE1 Fallback match: Mentee {} → Mentor {} (score = {})", mentee.getId(), mentor.getId(), score);
             });
         }
 
-        // Logging unmatched
         mentees.stream()
                 .filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m)))
-                .forEach(m -> log.warn("❌ Unmatched mentee: {}", m.getId()));
+                .forEach(m -> log.warn("\u274C Unmatched mentee: {}", m.getId()));
 
         return matches;
     }

@@ -111,9 +111,25 @@ public class MatchService {
             throw new IllegalArgumentException("No matches found");
         }
 
-        matches.forEach(match -> match.setStatus(status));
+        matches.forEach(match -> {
+            match.setStatus(status);
+
+            if (status == MatchStatus.DECLINED) {
+                ParticipantInProgrammeYear mentor = match.getMentor();
+                ParticipantInProgrammeYear mentee = match.getMentee();
+
+                if (mentor != null && Boolean.TRUE.equals(mentor.getIsMatched())) {
+                    mentor.setIsMatched(false);
+                }
+
+                if (mentee != null && Boolean.TRUE.equals(mentee.getIsMatched())) {
+                    mentee.setIsMatched(false);
+                }
+            }
+        });
+
         matchRepository.saveAll(matches);
-        log.info("Updated {} matches to status {}", matches.size(), status);
+        log.info("✅ Updated {} matches to status {}", matches.size(), status);
     }
 
     public Page<CoordinatorMatchDto> searchMatches(

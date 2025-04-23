@@ -13,6 +13,7 @@ import uk.bovykina.matching_guru.entity.Programme;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
+import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
 import uk.bovykina.matching_guru.service.ProgrammeYearService;
 
@@ -31,6 +32,7 @@ public class GaleShapleyTest {
     private ProgrammeYearService programmeYearService;
     private GaleShapleyService galeShapleyService;
     private ProgrammeYear programmeYear;
+    private MatchRepository matchRepository;
 
     @BeforeEach
     void setUp() {
@@ -40,6 +42,7 @@ public class GaleShapleyTest {
         criteriaProvider = mock(MatchingCriteriaProvider.class);
         matchSaver = mock(MatchSaver.class);
         programmeYearService = mock(ProgrammeYearService.class);
+        matchRepository = mock(MatchRepository.class);
 
         galeShapleyService = new GaleShapleyService(
                 participantRepository,
@@ -47,7 +50,8 @@ public class GaleShapleyTest {
                 mentorshipValidator,
                 criteriaProvider,
                 matchSaver,
-                programmeYearService
+                programmeYearService,
+                matchRepository
         );
 
         Programme programme = new Programme();

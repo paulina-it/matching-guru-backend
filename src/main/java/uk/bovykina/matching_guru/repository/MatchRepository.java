@@ -76,4 +76,6 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     @Modifying
     @Query("DELETE FROM Match m WHERE m.programmeYear.id = :programmeYearId")
     void deleteByProgrammeYearId(@Param("programmeYearId") Long programmeYearId);
+
+    boolean existsByMentorIdAndMenteeIdAndStatusIn(Long mentorId, Long menteeId, List<MatchStatus> statuses);
 }
