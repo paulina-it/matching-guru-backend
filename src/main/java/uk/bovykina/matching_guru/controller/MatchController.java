@@ -40,7 +40,7 @@ public class MatchController {
         return ResponseEntity.ok(matchDto);
     }
 
-
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/programmeYear/{programmeYearId}")
     public ResponseEntity<Page<MatchResponseDto>> getMatchesByProgrammeYear(
             @PathVariable Long programmeYearId,
@@ -53,13 +53,15 @@ public class MatchController {
 
     @PatchMapping("/update-status")
     public ResponseEntity<String> updateMatchStatus(@RequestBody MatchStatusUpdateDto request) {
-        List<Long> matchIds = request.getMatchIds();
-        MatchStatus status = request.getStatus();
+        if (request.getMatchIds() == null || request.getMatchIds().isEmpty()) {
+            return ResponseEntity.badRequest().body("Match IDs must be provided.");
+        }
 
-        matchService.updateMatchStatus(matchIds, status);
+        matchService.updateMatchStatus(request.getMatchIds(), request);
 
         return ResponseEntity.ok("Matches updated successfully");
     }
+
 
     @GetMapping("/search")
     public ResponseEntity<Page<CoordinatorMatchDto>> searchMatches(
