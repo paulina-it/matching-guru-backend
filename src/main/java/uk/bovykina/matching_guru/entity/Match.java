@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.proxy.HibernateProxy;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.entity.enums.UserRole;
 
 import java.util.Objects;
 
@@ -18,7 +19,6 @@ import java.util.Objects;
         @UniqueConstraint(columnNames = {"mentor_id", "mentee_id"})
 })
 public class Match extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -42,6 +42,17 @@ public class Match extends BaseEntity {
     @JoinColumn(name = "programme_year_id", nullable = false)
     @ToString.Exclude
     private ProgrammeYear programmeYear;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "edited_by_user_id")
+    private User editedBy;
+
+    @Column(name = "edited_by_role")
+    @Enumerated(EnumType.STRING)
+    private UserRole editedByRole;
 
     @Override
     public boolean equals(Object o) {

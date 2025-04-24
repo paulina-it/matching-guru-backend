@@ -9,4 +9,6 @@ import java.util.List;
 public class MatchStatusUpdateDto {
     private List<Long> matchIds;
     private MatchStatus status;
+    private String rejectionReason;
+    private Long editedByUserId;
 }

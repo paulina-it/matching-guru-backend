@@ -77,4 +77,7 @@ public class User extends BaseEntity {
         return getClass().hashCode();
     }
 
+    public String getFullName() {
+        return this.firstName + " " + this.lastName;
+    }
 }

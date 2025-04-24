@@ -6,6 +6,7 @@ import uk.bovykina.matching_guru.dto.match.DetailedMatchResponseDto;
 import uk.bovykina.matching_guru.dto.match.MatchResponseDto;
 import uk.bovykina.matching_guru.entity.Match;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.repository.EndSurveyResponseRepository;
 
 import java.util.Optional;
@@ -17,7 +18,15 @@ public class MatchMapper {
 
     private final EndSurveyResponseRepository endSurveyResponseRepository;
 
+
     public MatchResponseDto toResponseDto(Match match) {
+        Long editedByUserId = null;
+        String editedByUserName = null;
+        if (match.getEditedBy() != null) {
+            editedByUserId = match.getEditedBy().getId();
+            editedByUserName = match.getEditedBy().getFullName();
+        }
+
         return new MatchResponseDto(
                 match.getId(),
                 Optional.ofNullable(match.getProgrammeYear()).map(p -> p.getId()).orElse(null),
@@ -27,6 +36,13 @@ public class MatchMapper {
                 match.getMentor().getAcademicStage().name(),
                 Optional.ofNullable(match.getMentor().getCourse()).map(c -> c.getName()).orElse("N/A"),
                 match.getCompatibilityScore(),
+
+                match.getRejectionReason(),
+
+                editedByUserId,
+                editedByUserName,
+                match.getEditedByRole(),
+
                 match.getMentee().getId(),
                 formatFullName(match.getMentee()),
                 match.getMentee().getAcademicStage().name(),
@@ -45,7 +61,12 @@ public class MatchMapper {
                 match.getUpdatedAt(),
                 toParticipantDto(match.getMentor()),
                 toParticipantDto(match.getMentee()),
-                match.getCompatibilityScore()
+                match.getCompatibilityScore(),
+                match.getRejectionReason(),
+
+                Optional.ofNullable(match.getEditedBy()).map(user -> user.getId()).orElse(null),
+                Optional.ofNullable(match.getEditedBy()).map(user -> formatFullName(user)).orElse(null),
+                Optional.ofNullable(match.getEditedByRole()).orElse(null)
         );
     }
 
@@ -76,5 +97,9 @@ public class MatchMapper {
 
     private String formatFullName(ParticipantInProgrammeYear participant) {
         return participant.getUser().getFirstName() + " " + participant.getUser().getLastName();
+    }
+
+    private String formatFullName(User user) {
+        return user.getFirstName() + " " + user.getLastName();
     }
 }

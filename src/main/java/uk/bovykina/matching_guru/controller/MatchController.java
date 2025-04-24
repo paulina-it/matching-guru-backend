@@ -51,11 +51,6 @@ public class MatchController {
         return ResponseEntity.ok(matchesPage);
     }
 
-//    @GetMapping("/all")
-//    public ResponseEntity<List<MatchResponseDto>> getAllMatches() {
-//        return ResponseEntity.ok(matchService.getAllMatches());
-//    }
-
     @PatchMapping("/update-status")
     public ResponseEntity<String> updateMatchStatus(@RequestBody MatchStatusUpdateDto request) {
         List<Long> matchIds = request.getMatchIds();

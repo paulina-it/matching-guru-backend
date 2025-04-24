@@ -22,6 +22,10 @@ public class DetailedMatchResponseDto {
     private ParticipantDto mentor;
     private ParticipantDto mentee;
     private double compatibilityScore;
+    private String rejectionReason;
+    private Long editedByUserId;
+    private String editedByUserName;
+    private UserRole editedByRole;
 
     @Data
     @AllArgsConstructor

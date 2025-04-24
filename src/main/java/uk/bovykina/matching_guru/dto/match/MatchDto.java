@@ -11,4 +11,6 @@ public class MatchDto {
     private MatchStatus status;
     private double compatibilityScore;
     private Long programmeYearId;
+    private String rejectionReason;
+    private Long rejectedByUserId;
 }

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.entity.enums.CommunicationStatus;
 import uk.bovykina.matching_guru.entity.enums.CommunicationType;
+import uk.bovykina.matching_guru.entity.enums.UserRole;
 
 import java.time.LocalDateTime;
 
@@ -28,4 +29,8 @@ public class MatchSummaryDto {
     private LocalDateTime lastInteractionDate;
     private CommunicationStatus lastInteractionStatus;
     private CommunicationType lastInteractionType;
+    private String rejectionReason;
+    private Long editedByUserId;
+    private String editedByUserName;
+    private UserRole editedByRole;
 }

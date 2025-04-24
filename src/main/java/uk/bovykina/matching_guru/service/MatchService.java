@@ -9,10 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.match.*;
 import uk.bovykina.matching_guru.entity.Match;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
+import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.mapper.MatchMapper;
 import uk.bovykina.matching_guru.repository.MatchRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
+import uk.bovykina.matching_guru.repository.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class MatchService {
     private final MatchRepository matchRepository;
     private final ParticipantRepository participantRepository;
     private final MatchMapper matchMapper;
+    private final UserRepository userRepository;
 
     public boolean doesMatchExist(Long mentorId, Long menteeId) {
         boolean exists = matchRepository.existsByMentorIdAndMenteeId(mentorId, menteeId);
@@ -167,20 +170,28 @@ public class MatchService {
                 .orElseThrow(() -> new EntityNotFoundException("Match not found"));
 
         MatchStatus newStatus = request.getDecision();
-        if (newStatus != MatchStatus.ACCEPTED && newStatus != MatchStatus.DECLINED) {
-            throw new IllegalArgumentException("Invalid decision: must be ACCEPTED or DECLINED");
+
+        if (newStatus != MatchStatus.ACCEPTED && newStatus != MatchStatus.REJECTED) {
+            throw new IllegalArgumentException("Invalid decision: must be ACCEPTED or REJECTED");
         }
 
-        match.setStatus(newStatus);
-        matchRepository.save(match);
-
-        if (newStatus == MatchStatus.DECLINED) {
+        if (newStatus == MatchStatus.REJECTED) {
+            match.setEditedBy(userRepository.getReferenceById(request.getUserId()));
+            match.setRejectionReason(request.getRejectionReason());
+            match.setStatus(MatchStatus.REJECTED);
             match.getMentor().setIsMatched(false);
             match.getMentee().setIsMatched(false);
             participantRepository.saveAll(List.of(match.getMentor(), match.getMentee()));
+        } else if (newStatus == MatchStatus.ACCEPTED) {
+            if (match.getStatus() == MatchStatus.ACCEPTED_BY_ONE_PARTY) {
+                match.setStatus(MatchStatus.ACCEPTED_BY_BOTH);
+            } else {
+                match.setStatus(MatchStatus.ACCEPTED_BY_ONE_PARTY);
+            }
         }
 
-        log.info("✅ Match {} updated to status {}", match.getId(), newStatus);
+        matchRepository.save(match);
+        log.info("✅ Match {} updated to status {}", match.getId(), match.getStatus());
     }
 
     private ParticipantInProgrammeYear fetchParticipant(Long id, String role) {
