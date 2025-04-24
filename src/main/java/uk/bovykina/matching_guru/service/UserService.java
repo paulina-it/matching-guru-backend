@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.user.*;
 import uk.bovykina.matching_guru.entity.Auth;
+import uk.bovykina.matching_guru.entity.InviteToken;
 import uk.bovykina.matching_guru.entity.Organisation;
 import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.entity.enums.UserRole;
@@ -47,6 +48,7 @@ public class UserService {
     private final JwtUtils jwtService;
     private final CloudinaryService cloudinaryService;
     private final UserMapper userMapper;
+    private final InviteService inviteService;
 
     /**
      * Uploads a profile image and returns the image URL.
@@ -102,6 +104,21 @@ public class UserService {
         }
 
         User user = userMapper.toUser(userCreateDto);
+
+        if (userCreateDto.getInviteToken() != null) {
+            log.info("🔎 Validating invite token: {}", userCreateDto.getInviteToken());
+            InviteToken invite = inviteService.validateToken(userCreateDto.getInviteToken());
+
+            Organisation organisation = organisationRepository.findById(invite.getOrganisationId())
+                    .orElseThrow(() -> {
+                        log.error("❌ Organisation not found for ID from invite: {}", invite.getOrganisationId());
+                        return new IllegalArgumentException("Invalid organisation ID in invite.");
+                    });
+
+            user.setOrganisation(organisation);
+            inviteService.markTokenAsUsed(userCreateDto.getInviteToken());
+            log.info("🔐 Invite token used. Assigned organisation ID: {}", invite.getOrganisationId());
+        }
 
         if (userCreateDto.getJoinCode() != null) {
             log.info("🔎 Finding organisation by join code: {}", userCreateDto.getJoinCode());

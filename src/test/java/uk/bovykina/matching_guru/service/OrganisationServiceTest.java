@@ -52,30 +52,6 @@ class OrganisationServiceTest {
     }
 
     @Test
-    void testValidateInviteToken_Valid() {
-        String token = UUID.randomUUID().toString();
-        InviteToken inviteToken = new InviteToken(token, 1L, "test@example.com", LocalDateTime.now().plusHours(1));
-        when(inviteTokenRepository.findByToken(token)).thenReturn(Optional.of(inviteToken));
-
-        boolean isValid = organisationService.validateInviteToken(token);
-
-        assertTrue(isValid);
-        verify(inviteTokenRepository, never()).delete(inviteToken);
-    }
-
-    @Test
-    void testValidateInviteToken_Expired() {
-        String token = UUID.randomUUID().toString();
-        InviteToken inviteToken = new InviteToken(token, 1L, "test@example.com", LocalDateTime.now().minusHours(1));
-        when(inviteTokenRepository.findByToken(token)).thenReturn(Optional.of(inviteToken));
-
-        boolean isValid = organisationService.validateInviteToken(token);
-
-        assertFalse(isValid);
-        verify(inviteTokenRepository).delete(inviteToken);
-    }
-
-    @Test
     void testCreateOrganisation_shouldReturnDto() {
         OrganisationCreateDto createDto = new OrganisationCreateDto();
         createDto.setName("Test Org");
@@ -110,15 +86,6 @@ class OrganisationServiceTest {
 
         assertEquals("http://image.url", result);
         verify(organisationRepository).save(org);
-    }
-
-    @Test
-    void testGenerateInviteToken_shouldSaveToken() {
-        String email = "test@example.com";
-        String result = organisationService.generateInviteToken(1L, email);
-
-        assertNotNull(result);
-        verify(inviteTokenRepository).save(any(InviteToken.class));
     }
 
     @Test

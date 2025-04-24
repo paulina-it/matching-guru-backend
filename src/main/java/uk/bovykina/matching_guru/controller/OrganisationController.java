@@ -61,15 +61,6 @@ public class OrganisationController {
         }
     }
 
-
-    @PostMapping("/{organisationId}/invite")
-    public ResponseEntity<String> generateInviteToken(
-            @PathVariable Long organisationId,
-            @RequestParam String email) {
-        String inviteToken = organisationService.generateInviteToken(organisationId, email);
-        return ResponseEntity.ok(inviteToken);
-    }
-
     @GetMapping("/validate-token")
     public ResponseEntity<Boolean> validateInviteToken(@RequestParam String token) {
         boolean isValid = organisationService.validateInviteToken(token);

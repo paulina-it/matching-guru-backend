@@ -1,9 +1,6 @@
 package uk.bovykina.matching_guru.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -13,24 +10,32 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class InviteToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NonNull
     private String token;
 
+    @NonNull
     private Long organisationId;
 
+    @NonNull
     private String email;
 
+    @NonNull
     private LocalDateTime expiryDate;
 
-    public InviteToken(String token, Long organisationId, String email, LocalDateTime expiryDate) {
-        this.token = token;
-        this.organisationId = organisationId;
-        this.email = email;
-        this.expiryDate = expiryDate;
+    @Builder.Default
+    private boolean used = false;
+
+    @NonNull
+    private Long createdByUserId;
+
+    public boolean isExpired() {
+        return expiryDate.isBefore(LocalDateTime.now());
     }
 }

@@ -43,7 +43,7 @@ public class UserCreateDto {
 
     @NotNull
     private Integer age;
-
+    private String inviteToken;
     private String ethnicity;
     private String nationality;
     private String homeCountry;

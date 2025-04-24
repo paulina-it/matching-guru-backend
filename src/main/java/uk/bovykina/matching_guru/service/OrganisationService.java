@@ -73,20 +73,6 @@ public class OrganisationService {
         return logoUrl;
     }
 
-
-
-    public String generateInviteToken(Long organisationId, String email) {
-        log.info("Generating invite token for organisation ID: {} and email: {}", organisationId, email);
-        String token = UUID.randomUUID().toString();
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(INVITE_TOKEN_EXPIRY_HOURS);
-
-        InviteToken inviteToken = new InviteToken(token, organisationId, email, expiryDate);
-        inviteTokenRepository.save(inviteToken);
-
-        log.info("Invite token generated successfully for email: {}", email);
-        return token;
-    }
-
     public boolean validateInviteToken(String token) {
         log.info("Validating invite token: {}", token);
 
