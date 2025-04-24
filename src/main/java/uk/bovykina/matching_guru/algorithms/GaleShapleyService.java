@@ -39,15 +39,9 @@ public class GaleShapleyService {
 
         ProgrammeYear programmeYear = programmeYearService.getById(programmeYearId);
 
-        List<ParticipantInProgrammeYear> mentors = loadParticipants(programmeYearId, ParticipantRole.MENTOR, isInitialMatching)
-                .stream()
-                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
-                .collect(Collectors.toList());
+        List<ParticipantInProgrammeYear> mentors = loadParticipants(programmeYearId, ParticipantRole.MENTOR, isInitialMatching).stream().sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear()))).collect(Collectors.toList());
 
-        List<ParticipantInProgrammeYear> mentees = loadParticipants(programmeYearId, ParticipantRole.MENTEE, isInitialMatching)
-                .stream()
-                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
-                .collect(Collectors.toList());
+        List<ParticipantInProgrammeYear> mentees = loadParticipants(programmeYearId, ParticipantRole.MENTEE, isInitialMatching).stream().sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear()))).collect(Collectors.toList());
 
         if (mentors.isEmpty() || mentees.isEmpty()) {
             log.warn("\u26A0 Not enough participants to match");
@@ -62,18 +56,10 @@ public class GaleShapleyService {
     }
 
     private List<ParticipantInProgrammeYear> loadParticipants(Long programmeYearId, ParticipantRole role, boolean isInitialMatching) {
-        return participantRepository.findByProgrammeYearId(programmeYearId).stream()
-                .filter(p -> p.getRole() == role)
-                .filter(p -> isInitialMatching || !Boolean.TRUE.equals(p.getIsMatched()))
-                .sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear())))
-                .toList();
+        return participantRepository.findByProgrammeYearId(programmeYearId).stream().filter(p -> p.getRole() == role).filter(p -> isInitialMatching || !Boolean.TRUE.equals(p.getIsMatched())).sorted(Comparator.comparing(p -> Boolean.TRUE.equals(p.getWasMatchedLastYear()))).toList();
     }
 
-    private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> runGaleShapley(
-            List<ParticipantInProgrammeYear> mentors,
-            List<ParticipantInProgrammeYear> mentees,
-            Map<String, Integer> weights
-    ) {
+    private Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> runGaleShapley(List<ParticipantInProgrammeYear> mentors, List<ParticipantInProgrammeYear> mentees, Map<String, Integer> weights) {
         Map<ParticipantInProgrammeYear, List<ParticipantInProgrammeYear>> matches = new ConcurrentHashMap<>();
         Map<ParticipantInProgrammeYear, Queue<ParticipantInProgrammeYear>> mentorPreferences = new HashMap<>();
         Map<ParticipantInProgrammeYear, Integer> mentorLoad = new HashMap<>();
@@ -83,15 +69,10 @@ public class GaleShapleyService {
             mentorLoad.put(mentor, 0);
 
             List<ParticipantInProgrammeYear> compatibleMentees = mentees.stream().filter(mentee -> {
-                        if (mentor.getUser().getId().equals(mentee.getUser().getId())) return false;
-                        if (matchRepository.existsByMentorIdAndMenteeIdAndStatusIn(mentor.getId(), mentee.getId(), List.of(MatchStatus.DECLINED)))
-                            return false;
-                        if (!mentorshipValidator.isCompatible(mentor, mentee, true)) return false;
-                        return compatibilityService.calculate(mentor, mentee, weights) > 0;
-                    })
-                    .sorted(Comparator.comparingDouble(mentee -> -compatibilityService.calculate(mentor, mentee, weights)))
-                    .limit(5)
-                    .collect(Collectors.toList());
+                if (mentor.getUser().getId().equals(mentee.getUser().getId())) return false;
+                if (!mentorshipValidator.isCompatibleWithHistoryCheck(mentor, mentee, true, true)) return false;
+                return compatibilityService.calculate(mentor, mentee, weights) > 0;
+            }).sorted(Comparator.comparingDouble(mentee -> -compatibilityService.calculate(mentor, mentee, weights))).limit(5).collect(Collectors.toList());
 
             if (!compatibleMentees.isEmpty()) {
                 mentorPreferences.put(mentor, new LinkedList<>(compatibleMentees));
@@ -117,9 +98,7 @@ public class GaleShapleyService {
                 ParticipantInProgrammeYear mentee = preferences.poll();
                 double compatibilityScore = compatibilityService.calculate(mentor, mentee, weights);
 
-                boolean menteeMatched = matches.values().stream()
-                        .flatMap(List::stream)
-                        .anyMatch(m -> m.equals(mentee));
+                boolean menteeMatched = matches.values().stream().flatMap(List::stream).anyMatch(m -> m.equals(mentee));
 
                 if (compatibilityScore == 0 || menteeMatched) continue;
 
@@ -136,21 +115,12 @@ public class GaleShapleyService {
             }
         }
 
-        List<ParticipantInProgrammeYear> unmatchedMentees = mentees.stream()
-                .filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m)))
-                .toList();
+        List<ParticipantInProgrammeYear> unmatchedMentees = mentees.stream().filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m))).toList();
 
         for (ParticipantInProgrammeYear mentee : unmatchedMentees) {
-            Optional<ParticipantInProgrammeYear> bestFallbackMentor = mentors.stream()
-                    .filter(mentor -> !mentor.getUser().getId().equals(mentee.getUser().getId()))
-                    .filter(mentor -> mentorLoad.getOrDefault(mentor, 0) < (mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1))
-                    .filter(mentor -> !matchRepository.existsByMentorIdAndMenteeIdAndStatusIn(mentor.getId(), mentee.getId(), List.of(MatchStatus.DECLINED)))
-                    .filter(mentor -> mentorshipValidator.isFallbackValid(mentor.getAcademicStage(), mentee.getAcademicStage()))
-                    .filter(mentor -> mentor.getCourseGroup() != null && mentee.getCourseGroup() != null &&
-                            mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId()))
-                    .sorted(Comparator.comparingDouble((ParticipantInProgrammeYear mentor) ->
-                            -compatibilityService.calculate(mentor, mentee, weights)))
-                    .findFirst();
+            Optional<ParticipantInProgrammeYear> bestFallbackMentor = mentors.stream().filter(mentor -> !mentor.getUser().getId().equals(mentee.getUser().getId())).filter(mentor -> mentorLoad.getOrDefault(mentor, 0) < (mentor.getMenteesNumber() != null ? mentor.getMenteesNumber() : 1)).filter(mentor -> mentorshipValidator.isCompatibleWithHistoryCheck(mentor, mentee, false, true))
+
+                    .filter(mentor -> mentor.getCourseGroup() != null && mentee.getCourseGroup() != null && mentor.getCourseGroup().getId().equals(mentee.getCourseGroup().getId())).sorted(Comparator.comparingDouble((ParticipantInProgrammeYear mentor) -> -compatibilityService.calculate(mentor, mentee, weights))).findFirst();
 
             bestFallbackMentor.ifPresent(mentor -> {
                 matches.computeIfAbsent(mentor, k -> new ArrayList<>()).add(mentee);
@@ -160,9 +130,7 @@ public class GaleShapleyService {
             });
         }
 
-        mentees.stream()
-                .filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m)))
-                .forEach(m -> log.warn("\u274C Unmatched mentee: {}", m.getId()));
+        mentees.stream().filter(m -> matches.values().stream().flatMap(List::stream).noneMatch(mm -> mm.equals(m))).forEach(m -> log.warn("\u274C Unmatched mentee: {}", m.getId()));
 
         return matches;
     }

@@ -35,7 +35,7 @@ public class CompatibilityMatrixBuilder {
         for (ParticipantInProgrammeYear mentor : mentors) {
             Map<ParticipantInProgrammeYear, Double> mentorScores = new HashMap<>();
             for (ParticipantInProgrammeYear mentee : mentees) {
-                if (!mentorshipValidator.isCompatible(mentor, mentee, strictStage, strictGroup)) continue;
+                if (!mentorshipValidator.isCompatibleWithHistoryCheck(mentor, mentee, strictStage, strictGroup)) continue;
 
                 double score = compatibilityCalculator.calculate(mentor, mentee, weights);
                 if (score > 0) mentorScores.put(mentee, score);

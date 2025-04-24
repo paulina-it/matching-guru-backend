@@ -1,15 +1,21 @@
 package uk.bovykina.matching_guru.algorithms.helpers;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.AcademicStage;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
+import uk.bovykina.matching_guru.repository.MatchRepository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@RequiredArgsConstructor
 @Component
 public class MentorshipValidator {
+    private final MatchRepository matchRepository;
+
     private static final Map<AcademicStage, List<AcademicStage>> validPairs = Map.of(
             AcademicStage.FOUNDATION, List.of(AcademicStage.FIRST_YEAR),
             AcademicStage.FIRST_YEAR, List.of(AcademicStage.SECOND_YEAR),
@@ -58,4 +64,21 @@ public class MentorshipValidator {
     public boolean isCompatible(ParticipantInProgrammeYear mentor, ParticipantInProgrammeYear mentee, boolean strictCourseGroup) {
         return isCompatible(mentor, mentee, true, strictCourseGroup);
     }
+
+    public boolean isCompatibleWithHistoryCheck(ParticipantInProgrammeYear mentor,
+                                                ParticipantInProgrammeYear mentee,
+                                                boolean strictStage,
+                                                boolean strictCourseGroup) {
+
+        if (matchRepository.existsByMentorIdAndMenteeIdAndStatusIn(
+                mentor.getId(), mentee.getId(),
+                List.of(MatchStatus.DECLINED, MatchStatus.REJECTED))) {
+
+            System.out.printf("🚫 Previously rejected/declined: Mentor %d ↔ Mentee %d%n", mentor.getId(), mentee.getId());
+            return false;
+        }
+
+        return isCompatible(mentor, mentee, strictStage, strictCourseGroup);
+    }
+
 }
