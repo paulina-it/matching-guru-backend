@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import uk.bovykina.matching_guru.dto.user.UserSummaryDto;
 import uk.bovykina.matching_guru.service.CourseService;
 import uk.bovykina.matching_guru.service.UserService;
 import uk.bovykina.matching_guru.dto.user.UserResponseDto;
@@ -52,14 +53,25 @@ public class UserController {
     }
 
     /**
-     * Fetch all users.
+     * Fetch all users for an organisation.
      */
     @GetMapping("/all")
-    public ResponseEntity<Page<UserResponseDto>> getAllUsers(
+    public ResponseEntity<Page<UserSummaryDto>> getUsersByOrganisation(
+            @RequestParam Long organisationId,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "all") String role,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortOrder,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        log.info("📌 Fetching users - Page: {}, Size: {}", page, size);
-        Page<UserResponseDto> users = userService.getAllUsers(page, size);
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        log.info("📌 Fetching users: org={}, search='{}', role={}, sortBy={}, sortOrder={}",
+                organisationId, search, role, sortBy, sortOrder);
+
+        Page<UserSummaryDto> users = userService.getUsersByOrganisationFilteredAndSorted(
+                organisationId, search, role, sortBy, sortOrder, page, size
+        );
+
         return ResponseEntity.ok(users);
     }
 

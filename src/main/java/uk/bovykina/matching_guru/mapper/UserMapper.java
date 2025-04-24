@@ -3,10 +3,7 @@ package uk.bovykina.matching_guru.mapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import uk.bovykina.matching_guru.dto.user.UserCreateDto;
-import uk.bovykina.matching_guru.dto.user.UserDto;
-import uk.bovykina.matching_guru.dto.user.UserResponseDto;
-import uk.bovykina.matching_guru.dto.user.UserParticipationDto;
+import uk.bovykina.matching_guru.dto.user.*;
 import uk.bovykina.matching_guru.entity.User;
 import uk.bovykina.matching_guru.repository.CourseRepository;
 
@@ -116,5 +113,15 @@ public class UserMapper {
 
         log.info("Successfully transformed User entity to UserResponseDto for user ID: {}", user.getId());
         return userDto;
+    }
+
+    public UserSummaryDto toUserSummaryDto(User user) {
+        return new UserSummaryDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 }

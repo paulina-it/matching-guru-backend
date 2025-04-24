@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,6 +53,41 @@ public class UserService {
      */
     public String uploadProfileImage(MultipartFile file) throws IOException {
         return cloudinaryService.uploadImage(file, "profile_pictures");
+    }
+
+    /**
+     * Finds all users in a given organisation.
+     */
+    @Transactional
+    public Page<UserSummaryDto> getUsersByOrganisation(Long organisationId, int page, int size) {
+        log.info("📌 Fetching users for Organisation ID: {} - Page: {}, Size: {}", organisationId, page, size);
+
+        Page<User> users = userRepository.findByOrganisationId(organisationId, PageRequest.of(page, size));
+
+        return users.map(userMapper::toUserSummaryDto);
+    }
+
+    /**
+     * Finds, sorts and filters users in a given organisation.
+     */
+    public Page<UserSummaryDto> getUsersByOrganisationFilteredAndSorted(
+            Long organisationId, String search, String roleStr, String sortBy, String sortOrder,
+            int page, int size
+    ) {
+        Sort.Direction direction = sortOrder.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+
+        Sort sort;
+        if ("lastLogin".equalsIgnoreCase(sortBy)) {
+            sort = Sort.by(direction, "auth.lastLogin");
+        } else {
+            sort = Sort.by(direction, "u." + sortBy);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        UserRole role = "all".equalsIgnoreCase(roleStr) ? null : UserRole.valueOf(roleStr.toUpperCase());
+
+        return userRepository.findUsersByOrganisationWithFilters(organisationId, search, role, pageable);
     }
 
     /**

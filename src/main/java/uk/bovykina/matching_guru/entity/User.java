@@ -62,6 +62,8 @@ public class User extends BaseEntity {
     @ToString.Exclude
     private Set<ParticipantInProgrammeYear> participations;
     private String profileImageUrl;
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private Auth auth;
 
 
     @Override
