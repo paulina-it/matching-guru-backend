@@ -103,8 +103,8 @@ public class MatchService {
     }
 
     @Transactional
-    public void updateMatchStatus(List<Long> matchIds, MatchStatus status) {
-        log.info("Bulk updating matches to status={}, IDs={}", status, matchIds);
+    public void updateMatchStatus(List<Long> matchIds, MatchStatusUpdateDto statusUpdateDto) {
+        log.info("Bulk updating matches to status={}, IDs={}", statusUpdateDto.getStatus(), matchIds);
 
         List<Match> matches = (matchIds == null || matchIds.isEmpty())
                 ? matchRepository.findAll()
@@ -115,10 +115,18 @@ public class MatchService {
             throw new IllegalArgumentException("No matches found");
         }
 
-        matches.forEach(match -> {
-            match.setStatus(status);
+        User user = userRepository.findById(statusUpdateDto.getEditedByUserId())
+                .orElseThrow(() -> new EntityNotFoundException("User not found with ID " + statusUpdateDto.getEditedByUserId()));
 
-            if (status == MatchStatus.DECLINED) {
+        matches.forEach(match -> {
+            match.setStatus(statusUpdateDto.getStatus());
+
+            match.setEditedBy(user);
+            match.setEditedByRole(user.getRole());
+
+            if (statusUpdateDto.getStatus() == MatchStatus.DECLINED) {
+                match.setRejectionReason(statusUpdateDto.getRejectionReason());
+
                 ParticipantInProgrammeYear mentor = match.getMentor();
                 ParticipantInProgrammeYear mentee = match.getMentee();
 
@@ -133,7 +141,7 @@ public class MatchService {
         });
 
         matchRepository.saveAll(matches);
-        log.info("✅ Updated {} matches to status {}", matches.size(), status);
+        log.info("✅ Updated {} matches to status {}", matches.size(), statusUpdateDto.getStatus());
     }
 
     public Page<CoordinatorMatchDto> searchMatches(
