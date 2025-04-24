@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import uk.bovykina.matching_guru.dto.user.UserSummaryDto;
@@ -102,5 +103,18 @@ public class UserController {
             log.warn("⚠️ User not found with ID: {}", id);
             return ResponseEntity.status(404).body("User not found.");
         }
+    }
+
+    /**
+     * Assign existing coordinator to a given organisation.
+     */
+    @PatchMapping("/assign-organisation")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponseDto> assignOrganisation(
+            @RequestParam String userEmail,
+            @RequestParam Long organisationId
+    ) {
+        UserResponseDto updatedUser = userService.assignOrganisation(userEmail, organisationId);
+        return ResponseEntity.ok(updatedUser);
     }
 }

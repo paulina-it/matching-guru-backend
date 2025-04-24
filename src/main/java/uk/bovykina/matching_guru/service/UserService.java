@@ -149,6 +149,23 @@ public class UserService {
     }
 
     /**
+     * Assigns an  existing user to a given organisation.
+     */
+    public UserResponseDto assignOrganisation(String userEmail, Long organisationId) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        Organisation organisation = organisationRepository.findById(organisationId)
+                .orElseThrow(() -> new EntityNotFoundException("Organisation not found"));
+
+        user.setOrganisation(organisation);
+        userRepository.save(user);
+
+        return userMapper.toUserResponseDto(user);
+    }
+
+
+    /**
      * Updates a user’s details.
      */
     public UserResponseDto updateUser(UserUpdateDto updateDto) {
