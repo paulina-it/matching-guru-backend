@@ -82,7 +82,12 @@ public class MatchController {
         return ResponseEntity.ok(matches);
     }
 
-
+    @PatchMapping("/decision")
+    @PreAuthorize("hasAnyRole('ROLE_USER')")
+    public ResponseEntity<String> decideOnMatch(@RequestBody MatchDecisionDto request) {
+        matchService.processParticipantDecision(request);
+        return ResponseEntity.ok("Match decision processed successfully");
+    }
 
     @DeleteMapping("/programmeYear/{programmeYearId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

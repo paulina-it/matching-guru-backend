@@ -1,5 +1,6 @@
 package uk.bovykina.matching_guru.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -158,6 +159,28 @@ public class MatchService {
         participantRepository.saveAll(participants);
 
         log.info("Reset isMatched=false for {} participants", participants.size());
+    }
+
+    @Transactional
+    public void processParticipantDecision(MatchDecisionDto request) {
+        Match match = matchRepository.findById(request.getMatchId())
+                .orElseThrow(() -> new EntityNotFoundException("Match not found"));
+
+        MatchStatus newStatus = request.getDecision();
+        if (newStatus != MatchStatus.ACCEPTED && newStatus != MatchStatus.DECLINED) {
+            throw new IllegalArgumentException("Invalid decision: must be ACCEPTED or DECLINED");
+        }
+
+        match.setStatus(newStatus);
+        matchRepository.save(match);
+
+        if (newStatus == MatchStatus.DECLINED) {
+            match.getMentor().setIsMatched(false);
+            match.getMentee().setIsMatched(false);
+            participantRepository.saveAll(List.of(match.getMentor(), match.getMentee()));
+        }
+
+        log.info("✅ Match {} updated to status {}", match.getId(), newStatus);
     }
 
     private ParticipantInProgrammeYear fetchParticipant(Long id, String role) {
