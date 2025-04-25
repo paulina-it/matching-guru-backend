@@ -11,6 +11,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeCreateDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeParticipantViewDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeUpdateDto;
 import uk.bovykina.matching_guru.dto.user.UserResponseDto;
 import uk.bovykina.matching_guru.entity.enums.UserRole;
@@ -123,6 +124,20 @@ public class ProgrammeController {
         } catch (Exception e) {
             log.error("Error fetching programmes for user: {}", userId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+        }
+    }
+
+    @GetMapping("/participant/{userId}/my-and-available")
+    public ResponseEntity<ProgrammeParticipantViewDto> getMyAndAvailableProgrammes(@PathVariable Long userId) {
+        try {
+            ProgrammeParticipantViewDto result = programmeService.getMyAndAvailableProgrammes(userId);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            log.error("User not found or error fetching programmes for user: {}", userId, e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (Exception e) {
+            log.error("Unexpected error while fetching participant programmes", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

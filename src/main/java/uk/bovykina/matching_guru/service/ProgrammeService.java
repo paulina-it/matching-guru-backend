@@ -5,10 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeCreateDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeParticipantViewDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeUpdateDto;
-import uk.bovykina.matching_guru.entity.CourseGroup;
-import uk.bovykina.matching_guru.entity.Organisation;
-import uk.bovykina.matching_guru.entity.Programme;
+import uk.bovykina.matching_guru.dto.user.UserResponseDto;
+import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
@@ -105,16 +105,52 @@ public class ProgrammeService {
                 .collect(Collectors.toList());
     }
 
+    public ProgrammeParticipantViewDto getMyAndAvailableProgrammes(Long userId) {
+        List<ProgrammeDto> myProgrammes = getProgrammesByUserId(userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+
+        Course userCourse = user.getCourse();
+        CourseGroup userCourseGroup = (userCourse != null) ? userCourse.getGroup() : null;
+
+        List<Programme> activeProgrammes = programmeRepository.findActiveProgrammesByOrganisationId(user.getOrganisation().getId());
+
+        List<ProgrammeDto> availableProgrammes = activeProgrammes.stream()
+                .filter(prog -> {
+                    Set<CourseGroup> eligibleGroups = prog.getEligibleCourseGroups();
+                    if (eligibleGroups == null || eligibleGroups.isEmpty()) {
+                        return true;
+                    }
+                    return userCourseGroup != null && eligibleGroups.contains(userCourseGroup);
+                })
+                .filter(prog -> myProgrammes.stream().noneMatch(myProg -> myProg.getId().equals(prog.getId())))
+                .map(this::toProgrammeDto)
+                .toList();
+
+        return new ProgrammeParticipantViewDto(myProgrammes, availableProgrammes);
+    }
+
     private ProgrammeDto toProgrammeDto(Programme programme) {
         ProgrammeDto dto = new ProgrammeDto();
         dto.setId(programme.getId());
         dto.setName(programme.getName());
         dto.setDescription(programme.getDescription());
         dto.setOrganisationId(programme.getOrganisation().getId());
+
+        Set<CourseGroup> eligibleGroups = programme.getEligibleCourseGroups();
+
         dto.setCourseGroupIds(
-                programme.getEligibleCourseGroups().stream()
+                eligibleGroups.stream()
                         .map(CourseGroup::getId)
                         .collect(Collectors.toSet())
+        );
+        dto.setCourseGroups(
+                eligibleGroups.stream()
+                        .collect(Collectors.toMap(
+                                CourseGroup::getId,
+                                CourseGroup::getName
+                        ))
         );
 
         Integer participants = participantRepository.countDistinctParticipantsByProgrammeId(programme.getId());
