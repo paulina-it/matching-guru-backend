@@ -1,4 +1,4 @@
-package uk.bovykina.matching_guru.dto.stats;
+package uk.bovykina.matching_guru.dto.stats.match;
 
 import lombok.Getter;
 import lombok.Setter;

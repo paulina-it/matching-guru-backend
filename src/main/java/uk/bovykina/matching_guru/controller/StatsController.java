@@ -1,10 +1,13 @@
 package uk.bovykina.matching_guru.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import uk.bovykina.matching_guru.dto.stats.OrganisationEngagementStatsDto;
-import uk.bovykina.matching_guru.dto.stats.OrganisationMatchStatsDto;
+import uk.bovykina.matching_guru.dto.stats.demographics.OrganisationDemographicStatsDto;
+import uk.bovykina.matching_guru.dto.stats.engagement.OrganisationEngagementStatsDto;
+import uk.bovykina.matching_guru.dto.stats.match.OrganisationMatchStatsDto;
 import uk.bovykina.matching_guru.service.StatsService;
 
 @RestController
@@ -41,4 +44,12 @@ public class StatsController {
         return stats;
     }
 
+    @GetMapping("/demographics/organisation/{organisationId}")
+    public ResponseEntity<OrganisationDemographicStatsDto> demographics(
+            @Parameter(example = "10") @PathVariable Long organisationId) {
+
+        log.info("📊 Fetching demographic stats for organisation ID: {}", organisationId);
+        return ResponseEntity.ok(
+                statsService.getOrganisationDemographics(organisationId));
+    }
 }

@@ -4,14 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.bovykina.matching_guru.dto.stats.*;
+import uk.bovykina.matching_guru.dto.stats.demographics.*;
+import uk.bovykina.matching_guru.dto.stats.engagement.OrganisationEngagementStatsDto;
+import uk.bovykina.matching_guru.dto.stats.engagement.ProgrammeEngagementStatsDto;
+import uk.bovykina.matching_guru.dto.stats.engagement.ProgrammeYearEngagementStatsDto;
+import uk.bovykina.matching_guru.dto.stats.engagement.WeeklyEngagementPoint;
+import uk.bovykina.matching_guru.dto.stats.match.OrganisationMatchStatsDto;
+import uk.bovykina.matching_guru.dto.stats.match.ProgrammeMatchStatsDto;
+import uk.bovykina.matching_guru.dto.stats.match.ProgrammeYearMatchStatsDto;
 import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
-import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.*;
 
-import java.time.LocalDateTime;
-import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +34,7 @@ public class StatsService {
     private final CommunicationLogRepository communicationLogRepository;
     private final EndSurveyResponseRepository endSurveyResponseRepository;
     private final ProgrammeRepository programmeRepository;
+
     public OrganisationMatchStatsDto getOrganisationStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation not found with id: " + organisationId));
@@ -242,6 +247,116 @@ public class StatsService {
         result.setProgrammes(programmeStatsList);
 
         return result;
+    }
+
+    @Transactional(readOnly = true)
+    public OrganisationDemographicStatsDto getOrganisationDemographics(Long orgId) {
+        Organisation org = organisationRepository.findById(orgId)
+                .orElseThrow(() -> new IllegalArgumentException("Org not found"));
+
+        List<ProgrammeYear> years = programmeYearRepo.findByProgramme_Organisation_Id(orgId);
+        List<Long> yearIds = years.stream().map(ProgrammeYear::getId).toList();
+
+        Map<Long, Map<String, Long>> courseByYear = aggregateByYear(participantRepository.countByCourse(yearIds));
+        Map<Long, Map<String, Long>> stageByYear = aggregateByYear(participantRepository.countByStage(yearIds));
+
+        List<Object[]> groupRows = participantRepository.countCourseGroupsByProgrammeYears(yearIds);
+        Map<Long, Map<String, Long>> groupByYear = aggregateByYear(groupRows);
+
+        Map<String, Long> groupTotals = new HashMap<>();
+        for (Object[] row : groupRows) {
+            String groupName = (String) row[1];
+            Long count = (Long) row[2];
+            groupTotals.merge(groupName, count, Long::sum);
+        }
+
+        long orgTotal = 0;
+        Map<String, Long> orgCourse = new HashMap<>();
+        Map<String, Long> orgStage = new HashMap<>();
+        Map<String, Long> orgGroups = new HashMap<>();
+
+        Map<Long, List<ProgrammeYear>> byProgramme = years.stream()
+                .collect(Collectors.groupingBy(py -> py.getProgramme().getId()));
+
+        List<ProgrammeDemoDto> programmeDtos = new ArrayList<>();
+
+        for (var progEntry : byProgramme.entrySet()) {
+            Programme prog = progEntry.getValue().get(0).getProgramme();
+            List<ProgrammeYearDemoDto> yearDtos = new ArrayList<>();
+
+            for (ProgrammeYear y : progEntry.getValue()) {
+                long yId = y.getId();
+
+                Map<String, Long> cMap = courseByYear.getOrDefault(yId, Map.of());
+                Map<String, Long> sMap = stageByYear.getOrDefault(yId, Map.of());
+                Map<String, Long> gMap = groupByYear.getOrDefault(yId, Map.of());
+
+                long total = cMap.values().stream().mapToLong(Long::longValue).sum();
+                orgTotal += total;
+
+                cMap.forEach((k, v) -> orgCourse.merge(k, v, Long::sum));
+                sMap.forEach((k, v) -> orgStage.merge(k, v, Long::sum));
+                gMap.forEach((k, v) -> orgGroups.merge(k, v, Long::sum));
+
+                yearDtos.add(new ProgrammeYearDemoDto(
+                        y.getAcademicYear(),
+                        toCourseList(cMap),
+                        toStageList(sMap),
+                        total,
+                        toGroupList(gMap)
+                ));
+            }
+
+            programmeDtos.add(new ProgrammeDemoDto(prog.getName(), yearDtos));
+        }
+
+        return new OrganisationDemographicStatsDto(
+                org.getName(),
+                orgTotal,
+                toCourseList(orgCourse),
+                toStageList(orgStage),
+                toGroupList(groupTotals),
+                programmeDtos
+        );
+    }
+
+    private Map<Long, Map<String, Long>> aggregateByYear(List<Object[]> rows) {
+        Map<Long, Map<String, Long>> result = new HashMap<>();
+        for (Object[] r : rows) {
+            Long yearId = (Long) r[0];
+            String name = (r[1] instanceof Enum<?> e) ? e.name() : r[1].toString();
+            Long cnt = (Long) r[2];
+            result.computeIfAbsent(yearId, __ -> new HashMap<>()).put(name, cnt);
+        }
+        return result;
+    }
+
+    private Map<String, Long> aggregateByName(List<Object[]> rows) {
+        Map<String, Long> result = new HashMap<>();
+        for (Object[] r : rows) {
+            String name = (String) r[0];
+            Long cnt = (Long) r[1];
+            result.put(name, cnt);
+        }
+        return result;
+    }
+
+    private List<CourseBreakdownDto> toCourseList(Map<String, Long> map) {
+        return map.entrySet().stream()
+                .map(e -> new CourseBreakdownDto(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    private List<StageBreakdownDto> toStageList(Map<String, Long> map) {
+        return map.entrySet().stream()
+                .map(e -> new StageBreakdownDto(e.getKey(), e.getValue()))
+                .toList();
+    }
+
+    private List<CourseGroupBreakdownDto> toGroupList(Map<String, Long> map) {
+        return map.entrySet().stream()
+                .map(e -> new CourseGroupBreakdownDto(e.getKey(), e.getValue().intValue()))
+                .toList();
     }
 
     private List<WeeklyEngagementPoint> getWeeklyEngagementStats(Long yearId) {

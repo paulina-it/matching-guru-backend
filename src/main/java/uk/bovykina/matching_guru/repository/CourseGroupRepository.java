@@ -9,5 +9,4 @@ public interface CourseGroupRepository extends JpaRepository<CourseGroup, Long> 
     List<CourseGroup> findByOrganisationId(Long organisationId);
     List<CourseGroup> findByName(String name);
     List<CourseGroup> findByNameAndOrganisationId(String name, Long organisationId);
-
 }

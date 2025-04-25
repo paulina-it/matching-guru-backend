@@ -103,4 +103,35 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
     );
 
     ParticipantInProgrammeYear findByRoleAndIsMatched(ParticipantRole role, boolean isMatched); // Be careful with this – ambiguous
+
+    @Query("""
+      SELECT py.id, c.name, COUNT(p.id)
+      FROM ParticipantInProgrammeYear p
+      JOIN p.programmeYear  py
+      JOIN p.user           u
+      JOIN u.course         c
+      WHERE py.id IN :yearIds
+      GROUP BY py.id, c.name
+    """)
+    List<Object[]> countByCourse(@Param("yearIds") List<Long> yearIds);
+
+    @Query("""
+      SELECT py.id, p.academicStage, COUNT(p.id)
+      FROM ParticipantInProgrammeYear p
+      JOIN p.programmeYear py
+      WHERE py.id IN :yearIds
+      GROUP BY py.id, p.academicStage
+    """)
+    List<Object[]> countByStage(@Param("yearIds") List<Long> yearIds);
+
+    @Query("""
+    SELECT p.programmeYear.id, cg.name, COUNT(p.id)
+    FROM ParticipantInProgrammeYear p
+    JOIN p.user u
+    JOIN u.course c
+    JOIN c.group cg
+    WHERE p.programmeYear.id IN :yearIds
+    GROUP BY p.programmeYear.id, cg.name
+""")
+    List<Object[]> countCourseGroupsByProgrammeYears(@Param("yearIds") List<Long> yearIds);
 }
