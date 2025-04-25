@@ -28,6 +28,7 @@ public class MatchService {
     private final ParticipantRepository participantRepository;
     private final MatchMapper matchMapper;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     public boolean doesMatchExist(Long mentorId, Long menteeId) {
         boolean exists = matchRepository.existsByMentorIdAndMenteeId(mentorId, menteeId);
@@ -57,6 +58,9 @@ public class MatchService {
 
         Match saved = matchRepository.save(match);
         log.info("Match created with ID: {}", saved.getId());
+
+        emailService.sendMatchCreatedEmail(saved);
+
         return matchMapper.toResponseDto(saved);
     }
 
@@ -138,6 +142,11 @@ public class MatchService {
                     mentee.setIsMatched(false);
                 }
             }
+            if (statusUpdateDto.getStatus() == MatchStatus.DECLINED) {
+                emailService.sendMatchDeclinedEmail(match);
+            } else if (statusUpdateDto.getStatus() == MatchStatus.APPROVED) {
+                emailService.sendMatchApprovedEmail(match);
+            }
         });
 
         matchRepository.saveAll(matches);
@@ -200,6 +209,11 @@ public class MatchService {
 
         matchRepository.save(match);
         log.info("✅ Match {} updated to status {}", match.getId(), match.getStatus());
+        if (newStatus == MatchStatus.ACCEPTED) {
+            emailService.sendParticipantAcceptedEmail(match, request.getUserId());
+        } else if (newStatus == MatchStatus.REJECTED) {
+            emailService.sendParticipantRejectedEmail(match, request.getUserId());
+        }
     }
 
     private ParticipantInProgrammeYear fetchParticipant(Long id, String role) {

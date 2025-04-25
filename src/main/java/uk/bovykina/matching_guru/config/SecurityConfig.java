@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/test-mail/**").permitAll()
                         .requestMatchers("/api/invites/validate", "/api/invites/mark-used").permitAll()
                         .requestMatchers("/", "/auth/signup", "/auth/login", "/auth/status", "/users/upload-profile-image", "/upload/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
