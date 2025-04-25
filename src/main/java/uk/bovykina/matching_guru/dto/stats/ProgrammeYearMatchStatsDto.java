@@ -10,4 +10,13 @@ public class ProgrammeYearMatchStatsDto {
     private int participants;
     private int matches;
     private double rate;
+
+    private int accepted;
+    private int rejected;
+    private int pending;
+    private int acceptedByOne;
+    private int acceptedByBoth;
+
+    private double acceptRate;
+    private double rejectRate;
 }

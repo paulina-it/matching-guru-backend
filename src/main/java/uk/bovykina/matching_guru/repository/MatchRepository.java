@@ -16,6 +16,21 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MatchRepository extends JpaRepository<Match, Long> {
+    List<Match> findByProgrammeYearIdIn(List<Long> yearIds);
+
+    @Query("""
+    SELECT m.programmeYear.id, m.status, COUNT(m.id)
+    FROM Match m
+    WHERE m.programmeYear.id IN :yearIds
+    GROUP BY m.programmeYear.id, m.status
+""")
+    List<Object[]> countMatchesByStatus(@Param("yearIds") List<Long> yearIds);
+
+    @Query("""
+    SELECT m.programmeYear.id, m.id, m.updatedAt FROM Match m
+    WHERE m.programmeYear.id IN :yearIds
+""")
+    List<Object[]> findMatchUpdatesByProgrammeYearIds(@Param("yearIds") List<Long> yearIds);
 
     @Query("SELECT COUNT(m) FROM Match m WHERE m.programmeYear.id = :programmeYearId AND m.status = 'PENDING'")
     int countPendingMatches(@Param("programmeYearId") Long programmeYearId);

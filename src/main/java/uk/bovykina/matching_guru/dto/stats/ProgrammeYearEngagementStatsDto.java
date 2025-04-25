@@ -17,6 +17,7 @@ public class ProgrammeYearEngagementStatsDto {
     private int inactivePairs;
     private int feedbackSubmitted;
     private double avgInteractionsPerMatch;
+    private double feedbackCompletionRate;
     private Map<String, Integer> communicationBreakdown;
     private List<WeeklyEngagementPoint> weeklyEngagement;
 }

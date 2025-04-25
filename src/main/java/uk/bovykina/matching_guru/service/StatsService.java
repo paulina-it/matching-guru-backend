@@ -3,8 +3,10 @@ package uk.bovykina.matching_guru.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import uk.bovykina.matching_guru.dto.stats.*;
 import uk.bovykina.matching_guru.entity.*;
+import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
 import uk.bovykina.matching_guru.repository.*;
 
@@ -28,7 +30,6 @@ public class StatsService {
     private final CommunicationLogRepository communicationLogRepository;
     private final EndSurveyResponseRepository endSurveyResponseRepository;
     private final ProgrammeRepository programmeRepository;
-
     public OrganisationMatchStatsDto getOrganisationStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation not found with id: " + organisationId));
@@ -57,6 +58,11 @@ public class StatsService {
         List<ProgrammeMatchStatsDto> programmeStatsList = new ArrayList<>();
         int totalParticipants = 0;
         int totalMatches = 0;
+        int totalAccepted = 0;
+        int totalRejected = 0;
+        int totalAcceptedByBoth = 0;
+        int totalAcceptedByOne = 0;
+        int totalPending = 0;
 
         for (Map.Entry<String, List<ProgrammeYear>> entry : groupedByProgramme.entrySet()) {
             String programmeName = entry.getKey();
@@ -67,8 +73,14 @@ public class StatsService {
 
             int programmeTotal = 0;
             int programmeMatches = 0;
+            int programmeAccepted = 0;
+            int programmeRejected = 0;
+            int programmeAcceptedByBoth = 0;
+            int programmeAcceptedByOne = 0;
+            int programmePending = 0;
 
             List<ProgrammeYearMatchStatsDto> yearStats = new ArrayList<>();
+
             for (ProgrammeYear year : years) {
                 long yearId = year.getId();
                 int participants = participantCounts.getOrDefault(yearId, 0);
@@ -77,41 +89,109 @@ public class StatsService {
                 programmeTotal += participants;
                 programmeMatches += matches;
 
+                List<Match> matchesForYear = matchRepository.findAllByProgrammeYearId(yearId);
+
+                int acceptedByBoth = (int) matchesForYear.stream()
+                        .filter(m -> m.getStatus() == MatchStatus.ACCEPTED_BY_BOTH)
+                        .count();
+                int acceptedByOne = (int) matchesForYear.stream()
+                        .filter(m -> m.getStatus() == MatchStatus.ACCEPTED_BY_ONE_PARTY)
+                        .count();
+                int pending = (int) matchesForYear.stream()
+                        .filter(m -> m.getStatus() == MatchStatus.PENDING)
+                        .count();
+                int rejected = (int) matchesForYear.stream()
+                        .filter(m -> m.getStatus() == MatchStatus.REJECTED)
+                        .count();
+
                 ProgrammeYearMatchStatsDto yearDto = new ProgrammeYearMatchStatsDto();
                 yearDto.setAcademicYear(year.getAcademicYear());
                 yearDto.setParticipants(participants);
                 yearDto.setMatches(matches);
                 yearDto.setRate(participants == 0 ? 0 : (matches * 100.0 / participants));
+                yearDto.setAccepted(acceptedByBoth + acceptedByOne);
+                yearDto.setAcceptedByBoth(acceptedByBoth);
+                yearDto.setAcceptedByOne(acceptedByOne);
+                yearDto.setPending(pending);
+                yearDto.setRejected(rejected);
+                yearDto.setAcceptRate(matches == 0 ? 0 : ((acceptedByBoth + acceptedByOne) * 100.0 / matches));
+                yearDto.setRejectRate(matches == 0 ? 0 : (rejected * 100.0 / matches));
+
                 yearStats.add(yearDto);
+
+                programmeAccepted += (acceptedByBoth + acceptedByOne);
+                programmeAcceptedByBoth += acceptedByBoth;
+                programmeAcceptedByOne += acceptedByOne;
+                programmePending += pending;
+                programmeRejected += rejected;
             }
 
             programmeStats.setYears(yearStats);
             programmeStats.setTotalParticipants(programmeTotal);
             programmeStats.setTotalMatches(programmeMatches);
-            programmeStats.setMatchRate(
-                    programmeTotal == 0 ? 0 : (programmeMatches * 100.0 / programmeTotal)
-            );
+            programmeStats.setAccepted(programmeAccepted);
+            programmeStats.setRejected(programmeRejected);
+            programmeStats.setAcceptedByBoth(programmeAcceptedByBoth);
+            programmeStats.setAcceptedByOne(programmeAcceptedByOne);
+            programmeStats.setPending(programmePending);
+            programmeStats.setMatchRate(programmeTotal == 0 ? 0 : (programmeMatches * 100.0 / programmeTotal));
+            programmeStats.setAcceptRate(programmeMatches == 0 ? 0 : (programmeAccepted * 100.0 / programmeMatches));
+            programmeStats.setRejectRate(programmeMatches == 0 ? 0 : (programmeRejected * 100.0 / programmeMatches));
 
             totalParticipants += programmeTotal;
             totalMatches += programmeMatches;
+            totalAccepted += programmeAccepted;
+            totalRejected += programmeRejected;
+            totalAcceptedByBoth += programmeAcceptedByBoth;
+            totalAcceptedByOne += programmeAcceptedByOne;
+            totalPending += programmePending;
 
             programmeStatsList.add(programmeStats);
         }
 
         orgStats.setTotalParticipants(totalParticipants);
         orgStats.setTotalMatches(totalMatches);
-        orgStats.setMatchRatePercent(
-                totalParticipants == 0 ? 0 : (totalMatches * 100.0 / totalParticipants)
-        );
+        orgStats.setMatchRatePercent(totalParticipants == 0 ? 0 : (totalMatches * 100.0 / totalParticipants));
+        orgStats.setOverallAcceptRate(totalMatches == 0 ? 0 : (totalAccepted * 100.0 / totalMatches));
+        orgStats.setOverallRejectRate(totalMatches == 0 ? 0 : (totalRejected * 100.0 / totalMatches));
+        orgStats.setAcceptedByBoth(totalAcceptedByBoth);
+        orgStats.setAcceptedByOne(totalAcceptedByOne);
+        orgStats.setPending(totalPending);
+        orgStats.setRejected(totalRejected);
         orgStats.setProgrammes(programmeStatsList);
 
         return orgStats;
     }
 
-
+    @Transactional(readOnly = true)
     public OrganisationEngagementStatsDto getOrganisationEngagementStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation not found with id: " + organisationId));
+
+        List<ProgrammeYear> allYears = programmeYearRepo.findByProgramme_Organisation_Id(organisationId);
+        List<Long> yearIds = allYears.stream().map(ProgrammeYear::getId).toList();
+
+        Map<Long, Long> participantCounts = participantRepository.countParticipantsByProgrammeYear(yearIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+
+        Map<Long, Long> feedbackCounts = endSurveyResponseRepository.countSurveysByProgrammeYear(yearIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
+
+        Map<Long, Map<String, Long>> communicationBreakdown = new HashMap<>();
+        for (Object[] row : communicationLogRepository.countLogsByYearAndType(yearIds)) {
+            Long yearId = (Long) row[0];
+            String type = row[1].toString();
+            Long count = (Long) row[2];
+            communicationBreakdown.computeIfAbsent(yearId, k -> new HashMap<>()).put(type, count);
+        }
+
+        Map<Long, Map<MatchStatus, Long>> matchStatusCounts = new HashMap<>();
+        for (Object[] row : matchRepository.countMatchesByStatus(yearIds)) {
+            Long yearId = (Long) row[0];
+            MatchStatus status = (MatchStatus) row[1];
+            Long count = (Long) row[2];
+            matchStatusCounts.computeIfAbsent(yearId, k -> new HashMap<>()).put(status, count);
+        }
 
         List<Programme> programmes = programmeRepository.findByOrganisationId(organisationId);
         List<ProgrammeEngagementStatsDto> programmeStatsList = new ArrayList<>();
@@ -120,74 +200,36 @@ public class StatsService {
             ProgrammeEngagementStatsDto programmeStats = new ProgrammeEngagementStatsDto();
             programmeStats.setProgrammeName(programme.getName());
 
-            List<ProgrammeYear> years = programmeYearRepo.findByProgrammeId(programme.getId());
+            List<ProgrammeYear> years = allYears.stream()
+                    .filter(y -> y.getProgramme().getId().equals(programme.getId()))
+                    .toList();
+
             List<ProgrammeYearEngagementStatsDto> yearStatsList = new ArrayList<>();
 
             for (ProgrammeYear year : years) {
                 Long yearId = year.getId();
-
-                List<ParticipantInProgrammeYear> participants = participantRepository.findByProgrammeYearId(yearId);
-                List<Match> matches = matchRepository.findAllByProgrammeYearId(yearId);
-                List<CommunicationLog> logs = communicationLogRepository.findByMatch_ProgrammeYearId(yearId);
-                List<EndSurveyResponse> surveys = endSurveyResponseRepository.findByProgrammeYearId(yearId);
-
                 ProgrammeYearEngagementStatsDto yearStats = new ProgrammeYearEngagementStatsDto();
                 yearStats.setAcademicYear(year.getAcademicYear());
-                yearStats.setParticipants(participants.size());
+                yearStats.setParticipants(participantCounts.getOrDefault(yearId, 0L).intValue());
 
-                // Role breakdown
-                int mentors = 0, mentees = 0;
-                for (ParticipantInProgrammeYear p : participants) {
-                    switch (p.getRole()) {
-                        case MENTOR -> mentors++;
-                        case MENTEE -> mentees++;
-                    }
-                }
-                yearStats.setMentors(mentors);
-                yearStats.setMentees(mentees);
+                int feedback = feedbackCounts.getOrDefault(yearId, 0L).intValue();
+                yearStats.setFeedbackSubmitted(feedback);
+                yearStats.setFeedbackCompletionRate(feedback == 0 ? 0.0 : (feedback * 100.0 / participantCounts.getOrDefault(yearId, 0L).intValue()));
 
-                // Inactive matches: no communication in the last 14 days
-                int inactivePairs = (int) matches.stream()
-                        .filter(m -> logs.stream()
-                                .noneMatch(log ->
-                                        log.getMatch().getId().equals(m.getId()) &&
-                                                log.getTimestamp().isAfter(LocalDateTime.now().minusDays(14)))
-                        ).count();
-                yearStats.setInactivePairs(inactivePairs);
+                Map<MatchStatus, Long> statusMap = matchStatusCounts.getOrDefault(yearId, Map.of());
+                yearStats.setInactivePairs(statusMap.getOrDefault(MatchStatus.PENDING, 0L).intValue());
 
-                // Feedback submitted
-                yearStats.setFeedbackSubmitted(surveys.size());
+                long totalMatches = statusMap.values().stream().mapToLong(Long::longValue).sum();
+                long acceptedByBoth = statusMap.getOrDefault(MatchStatus.ACCEPTED_BY_BOTH, 0L);
+                long acceptedByOne = statusMap.getOrDefault(MatchStatus.ACCEPTED_BY_ONE_PARTY, 0L);
+                yearStats.setAvgInteractionsPerMatch(totalMatches == 0 ? 0.0 : communicationBreakdown.getOrDefault(yearId, Map.of()).values().stream().mapToLong(Long::longValue).sum() / (double) totalMatches);
 
-                // Average interactions per match
-                double avgInteractions = matches.isEmpty() ? 0.0 : logs.size() / (double) matches.size();
-                yearStats.setAvgInteractionsPerMatch(avgInteractions);
-
-                // Communication breakdown
                 Map<String, Integer> breakdown = new HashMap<>();
-                for (CommunicationLog log : logs) {
-                    String type = log.getType().name();
-                    breakdown.put(type, breakdown.getOrDefault(type, 0) + 1);
-                }
+                communicationBreakdown.getOrDefault(yearId, Map.of()).forEach((k, v) -> breakdown.put(k, v.intValue()));
                 yearStats.setCommunicationBreakdown(breakdown);
 
-                // Weekly engagement counts
-                Map<String, Long> weeklyCounts = logs.stream()
-                        .collect(Collectors.groupingBy(
-                                log -> log.getTimestamp().getYear() + "-W" +
-                                        log.getTimestamp().get(WeekFields.ISO.weekOfWeekBasedYear()),
-                                Collectors.counting()
-                        ));
+                yearStats.setWeeklyEngagement(getWeeklyEngagementStats(yearId));
 
-                List<WeeklyEngagementPoint> weekPoints = weeklyCounts.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .map(e -> {
-                            WeeklyEngagementPoint point = new WeeklyEngagementPoint();
-                            point.setWeek(e.getKey());
-                            point.setInteractions(e.getValue().intValue());
-                            return point;
-                        }).toList();
-
-                yearStats.setWeeklyEngagement(weekPoints);
                 yearStatsList.add(yearStats);
             }
 
@@ -202,5 +244,11 @@ public class StatsService {
         return result;
     }
 
+    private List<WeeklyEngagementPoint> getWeeklyEngagementStats(Long yearId) {
+        List<Object[]> weeklyData = communicationLogRepository.findWeeklyEngagementByYear(yearId);
+        return weeklyData.stream()
+                .map(row -> new WeeklyEngagementPoint((String) row[0], ((Long) row[1]).intValue()))
+                .collect(Collectors.toList());
+    }
 
 }

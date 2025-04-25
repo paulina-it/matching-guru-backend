@@ -12,5 +12,12 @@ public class ProgrammeMatchStatsDto {
     private int totalParticipants;
     private int totalMatches;
     private double matchRate;
+    private int accepted;
+    private int rejected;
+    private int pending;
+    private double acceptRate;
+    private double rejectRate;
+    private int acceptedByBoth;
+    private int acceptedByOne;
     private List<ProgrammeYearMatchStatsDto> years;
 }

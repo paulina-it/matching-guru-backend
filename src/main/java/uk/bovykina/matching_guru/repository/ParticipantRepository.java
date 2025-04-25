@@ -24,6 +24,14 @@ public interface ParticipantRepository extends JpaRepository<ParticipantInProgra
     Page<ParticipantInProgrammeYear> findByProgrammeYearAndRole(ProgrammeYear programmeYear, ParticipantRole role, Pageable pageable);
 
     @Query("""
+    SELECT p.programmeYear.id, COUNT(p.id)
+    FROM ParticipantInProgrammeYear p
+    WHERE p.programmeYear.id IN :yearIds
+    GROUP BY p.programmeYear.id
+""")
+    List<Object[]> countParticipantsByProgrammeYear(@Param("yearIds") List<Long> yearIds);
+
+    @Query("""
         SELECT p FROM ParticipantInProgrammeYear p
         WHERE p.programmeYear = :programmeYear
           AND (

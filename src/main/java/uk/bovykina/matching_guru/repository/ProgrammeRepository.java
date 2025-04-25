@@ -28,4 +28,11 @@ public interface ProgrammeRepository extends JpaRepository<Programme, Long> {
     """)
     List<Programme> findProgrammesByUserId(@Param("userId") Long userId);
 
+    @Query("""
+    SELECT p FROM Programme p
+    JOIN FETCH p.organisation
+    WHERE p.organisation.id = :orgId
+""")
+    List<Programme> findWithOrganisationByOrganisationId(@Param("orgId") Long orgId);
+
 }
