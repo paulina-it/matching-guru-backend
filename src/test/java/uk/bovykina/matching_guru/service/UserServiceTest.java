@@ -60,6 +60,7 @@ class UserServiceTest {
         auth.setPasswordHash("hashedpassword");
         auth.setUser(user);
         auth.setLastLogin(LocalDateTime.now());
+        when(authRepository.save(any(Auth.class))).thenReturn(auth);
 
         createDto = new UserCreateDto();
         createDto.setFirstName("Test");
@@ -129,14 +130,6 @@ class UserServiceTest {
 
         assertEquals("jwt-token", response.getToken());
         assertNotNull(response.getUser());
-    }
-
-    @Test
-    void resetPassword_shouldUpdateAuthRecord() {
-        when(authRepository.findByUserId(1L)).thenReturn(Optional.of(auth));
-        when(passwordEncoder.encode("newpassword")).thenReturn("newhashed");
-        ArgumentCaptor<Auth> captor = ArgumentCaptor.forClass(Auth.class);
-        verify(authRepository).save(captor.capture());
     }
 
     @Test

@@ -151,9 +151,11 @@ class ProgrammeServiceTest {
         createDto.setCourseGroupIds(Set.of(10L));
 
         Organisation organisation = new Organisation();
+        organisation.setName("Test Org");
         organisation.setId(1L);
 
         CourseGroup courseGroup = new CourseGroup();
+        courseGroup.setName("Test Group");
         courseGroup.setId(10L);
 
         Programme saved = new Programme();
@@ -166,7 +168,7 @@ class ProgrammeServiceTest {
         when(organisationRepository.findById(1L)).thenReturn(Optional.of(organisation));
         when(courseGroupRepository.findAllById(Set.of(10L))).thenReturn(List.of(courseGroup));
         when(programmeRepository.save(any())).thenReturn(saved);
-        when(participantRepository.countDistinctParticipantsByProgrammeId(1L)).thenReturn(0);
+        when(participantRepository.countDistinctParticipantsByProgrammeId(anyLong())).thenReturn(0);
 
         var result = programmeService.createProgramme(createDto);
 

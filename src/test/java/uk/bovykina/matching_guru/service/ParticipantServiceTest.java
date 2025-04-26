@@ -75,17 +75,19 @@ class ParticipantServiceTest {
         createDto.setProgrammeYearId(programmeYear.getId());
         createDto.setRole(ParticipantRole.MENTEE);
 
+        ProgrammeYear pastYear = new ProgrammeYear();
+        pastYear.setId(999L);
+        pastYear.setProgramme(programmeYear.getProgramme());
+
         ParticipantInProgrammeYear previousUnmatched = new ParticipantInProgrammeYear();
         previousUnmatched.setUser(user);
-        ProgrammeYear prevYear = new ProgrammeYear();
-        prevYear.setId(5L);
-        prevYear.setProgramme(programme);
-        previousUnmatched.setProgrammeYear(prevYear);
+        previousUnmatched.setProgrammeYear(pastYear);
         previousUnmatched.setIsMatched(false);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(programmeYearRepository.findById(programmeYear.getId())).thenReturn(Optional.of(programmeYear));
-        when(participantRepository.findByUserId(user.getId())).thenReturn(Optional.of(previousUnmatched));
+        when(participantRepository.findAllByUserId(user.getId()))
+                .thenReturn(List.of(previousUnmatched)); // << MOCK HERE
         when(participantRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         ParticipantResponseDto result = participantService.createParticipant(createDto);

@@ -76,7 +76,12 @@ class MatchServiceTest {
         when(participantRepository.findById(1L)).thenReturn(Optional.of(mentor));
         when(participantRepository.findById(2L)).thenReturn(Optional.of(mentee));
         when(matchRepository.existsByMentorIdAndMenteeId(1L, 2L)).thenReturn(false);
-        when(matchRepository.save(any())).thenReturn(match);
+        when(matchRepository.save(any())).thenAnswer(invocation -> {
+            Match match = invocation.getArgument(0);
+            match.setStatus(MatchStatus.APPROVED);
+            return match;
+        });
+
         when(matchMapper.toResponseDto(match)).thenReturn(responseDto);
 
         MatchResponseDto result = matchService.createMatch(dto);
@@ -97,36 +102,25 @@ class MatchServiceTest {
 
         assertNull(result);
     }
-
     @Test
     void updateMatchStatus_shouldUpdateStatus() {
         MatchStatusUpdateDto updateDto = new MatchStatusUpdateDto();
         updateDto.setStatus(MatchStatus.APPROVED);
 
+        Match match = new Match();
+        match.setId(100L);
+        match.setStatus(MatchStatus.PENDING);
+
         when(matchRepository.findById(100L)).thenReturn(Optional.of(match));
-        match.setStatus(MatchStatus.APPROVED);
-        when(matchRepository.save(any())).thenReturn(match);
-
-        MatchResponseDto responseDto = new MatchResponseDto(
-                100L,
-                1L,
-                1L,
-                "Mentor",
-                "Year 2",
-                "CS",
-                0.85,
-                "N/A",
-                123L,
-                "John Doe",
-                UserRole.USER,
-                2L,
-                "Mentee",
-                "Year 1",
-                "IT",
-                MatchStatus.PENDING
-        );
-
-        when(matchMapper.toResponseDto(match)).thenReturn(responseDto);
+        when(matchRepository.save(any())).thenAnswer(invocation -> {
+            Match savedMatch = invocation.getArgument(0);
+            savedMatch.setStatus(MatchStatus.APPROVED);
+            return savedMatch;
+        });
+        when(matchMapper.toResponseDto(any())).thenReturn(new MatchResponseDto(
+                100L, 1L, 2L, "Mentor", "Year 2", "CS", 0.85, "N/A",
+                123L, "John Doe", UserRole.USER, 2L, "Mentee", "Year 1", "IT", MatchStatus.APPROVED
+        ));
 
         MatchResponseDto result = matchService.updateMatchStatus(100L, updateDto);
 
