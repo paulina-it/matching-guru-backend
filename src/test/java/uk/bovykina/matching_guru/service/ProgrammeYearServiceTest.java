@@ -9,13 +9,15 @@ import uk.bovykina.matching_guru.dto.programme.MatchingCriteriaDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeYearCreateDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeYearResponseDto;
 import uk.bovykina.matching_guru.entity.Programme;
+import uk.bovykina.matching_guru.entity.ProgrammeMatchingCriteria;
 import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.entity.enums.AlgorithmType;
 import uk.bovykina.matching_guru.entity.enums.CriterionType;
 import uk.bovykina.matching_guru.entity.enums.MatchApprovalType;
+import uk.bovykina.matching_guru.mapper.ProgrammeYearMapper;
 import uk.bovykina.matching_guru.repository.*;
+import uk.bovykina.matching_guru.util.CloudinaryService;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,6 +41,12 @@ class ProgrammeYearServiceTest {
     @Mock
     private MatchRepository matchRepository;
 
+    @Mock
+    private ProgrammeYearMapper programmeYearMapper;
+
+    @Mock
+    private CloudinaryService cloudinaryService;
+
     @InjectMocks
     private ProgrammeYearService programmeYearService;
 
@@ -47,7 +55,6 @@ class ProgrammeYearServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-
         programme = new Programme();
         programme.setId(1L);
         programme.setName("Test Programme");
@@ -75,13 +82,24 @@ class ProgrammeYearServiceTest {
 
         createDto.setMatchingCriteria(List.of(c1, c2));
 
-        ProgrammeYear saved = new ProgrammeYear();
-        saved.setId(10L);
-        saved.setProgramme(programme);
-        saved.setAcademicYear("2024/25");
+        ProgrammeYear programmeYear = new ProgrammeYear();
+        programmeYear.setId(10L);
+        programmeYear.setProgramme(programme);
+        programmeYear.setAcademicYear("2024/25");
+
+        ProgrammeYearResponseDto responseDto = new ProgrammeYearResponseDto();
+        responseDto.setId(10L);
+        responseDto.setAcademicYear("2024/25");
 
         when(programmeRepository.findById(1L)).thenReturn(Optional.of(programme));
-        when(programmeYearRepository.save(any())).thenReturn(saved);
+        when(programmeYearMapper.toEntity(any(), eq(programme), anyString())).thenReturn(programmeYear);
+        when(programmeYearRepository.save(any())).thenReturn(programmeYear);
+        when(participantRepository.countByProgrammeYearId(10L)).thenReturn(10);
+        when(participantRepository.countMatchedInProgrammeYear(10L)).thenReturn(6);
+        when(matchRepository.existsByProgrammeYearId(10L)).thenReturn(true);
+        when(matchingCriteriaRepository.findByProgrammeYearId(10L)).thenReturn(List.of());
+        when(programmeYearMapper.toResponseDto(eq(programmeYear), eq(10), eq(6), eq(true), anyList()))
+                .thenReturn(responseDto);
 
         ProgrammeYearResponseDto result = programmeYearService.createProgrammeYear(createDto);
 
@@ -117,6 +135,6 @@ class ProgrammeYearServiceTest {
     void getById_shouldThrowIfNotFound() {
         when(programmeYearRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> programmeYearService.getById(99L));
+        assertThrows(IllegalArgumentException.class, () -> programmeYearService.getById(99L));
     }
 }

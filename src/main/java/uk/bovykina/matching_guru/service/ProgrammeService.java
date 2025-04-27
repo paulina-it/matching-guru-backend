@@ -9,6 +9,7 @@ import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.mapper.ProgrammeMapper;
 import uk.bovykina.matching_guru.repository.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -55,8 +56,9 @@ public class ProgrammeService {
     }
 
     /**
-     * Updates an existing programme's name and description.
+     * Updates an existing programme.
      */
+    @Transactional
     public ProgrammeDto updateProgramme(Long id, ProgrammeUpdateDto dto) {
         log.info("Updating programme ID {}", id);
 
@@ -68,6 +70,15 @@ public class ProgrammeService {
 
         programme.setName(dto.getName());
         programme.setDescription(dto.getDescription());
+
+        if (dto.getContactEmail() != null) {
+            programme.setContactEmail(dto.getContactEmail());
+        }
+
+        if (dto.getCourseGroupIds() != null) {
+            Set<CourseGroup> groups = new HashSet<>(courseGroupRepository.findAllById(dto.getCourseGroupIds()));
+            programme.setEligibleCourseGroups(groups);
+        }
 
         Programme updated = programmeRepository.save(programme);
         int participants = participantRepository.countDistinctParticipantsByProgrammeId(updated.getId());

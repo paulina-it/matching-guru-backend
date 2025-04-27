@@ -164,6 +164,20 @@ public class OrganisationService {
         return organisationMapper.toDto(organisation);
     }
 
+    /**
+     * Deletes an organisation by its ID.
+     */
+    @Transactional
+    public void deleteOrganisation(Long id) {
+        log.info("Deleting organisation with ID={}", id);
+        if (!organisationRepository.existsById(id)) {
+            log.warn("Attempted to delete non-existing organisation ID={}", id);
+            throw new IllegalArgumentException("Organisation not found");
+        }
+        organisationRepository.deleteById(id);
+        log.info("Organisation ID={} deleted", id);
+    }
+
     private String generateUniqueJoinCode() {
         String joinCode;
         do {

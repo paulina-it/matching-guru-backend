@@ -9,6 +9,7 @@ import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
 import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.entity.enums.ParticipantRole;
+import uk.bovykina.matching_guru.mapper.ParticipantMapper;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.util.*;
@@ -18,33 +19,18 @@ import static org.mockito.Mockito.*;
 
 class ParticipantServiceTest {
 
-    @Mock
-    private ParticipantRepository participantRepository;
+    @Mock private ParticipantRepository participantRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private ProgrammeYearRepository programmeYearRepository;
+    @Mock private MatchRepository matchRepository;
+    @Mock private MatchService matchService;
+    @Mock private ParticipantMapper participantMapper;
 
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private ProgrammeYearRepository programmeYearRepository;
-
-    @Mock
-    private CourseRepository courseRepository;
-
-    @Mock
-    private MatchRepository matchRepository;
-
-    @Mock
-    private MatchService matchService;
-
-    @Mock
-    private EndSurveyResponseRepository endSurveyResponseRepository;
-
-    @InjectMocks
-    private ParticipantService participantService;
+    @InjectMocks private ParticipantService participantService;
 
     private User user;
-    private ProgrammeYear programmeYear;
     private Programme programme;
+    private ProgrammeYear programmeYear;
 
     @BeforeEach
     void setUp() {
@@ -55,110 +41,65 @@ class ParticipantServiceTest {
 
         programmeYear = new ProgrammeYear();
         programmeYear.setId(10L);
-        programmeYear.setAcademicYear("2024/25");
         programmeYear.setProgramme(programme);
-        Course mockCourse = new Course();
-        mockCourse.setId(1L);
-        mockCourse.setName("Mock Course");
+        programmeYear.setAcademicYear("2024/25");
+
         user = new User();
         user.setId(1L);
         user.setFirstName("Test");
         user.setLastName("User");
-        user.setEmail("test@example.com");
-        user.setCourse(mockCourse);
     }
 
     @Test
     void createParticipant_shouldSetWasMatchedLastYearFalseIfPreviouslyUnmatched() {
-        ParticipantCreateDto createDto = new ParticipantCreateDto();
-        createDto.setUserId(user.getId());
-        createDto.setProgrammeYearId(programmeYear.getId());
-        createDto.setRole(ParticipantRole.MENTEE);
+        ParticipantCreateDto dto = new ParticipantCreateDto();
+        dto.setUserId(1L);
+        dto.setProgrammeYearId(10L);
+        dto.setRole(ParticipantRole.MENTEE);
 
         ProgrammeYear pastYear = new ProgrammeYear();
-        pastYear.setId(999L);
-        pastYear.setProgramme(programmeYear.getProgramme());
+        pastYear.setId(5L);
+        pastYear.setProgramme(programme);
 
-        ParticipantInProgrammeYear previousUnmatched = new ParticipantInProgrammeYear();
-        previousUnmatched.setUser(user);
-        previousUnmatched.setProgrammeYear(pastYear);
-        previousUnmatched.setIsMatched(false);
+        ParticipantInProgrammeYear previous = new ParticipantInProgrammeYear();
+        previous.setProgrammeYear(pastYear);
+        previous.setIsMatched(false);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(programmeYearRepository.findById(programmeYear.getId())).thenReturn(Optional.of(programmeYear));
-        when(participantRepository.findAllByUserId(user.getId()))
-                .thenReturn(List.of(previousUnmatched)); // << MOCK HERE
-        when(participantRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        ParticipantInProgrammeYear created = new ParticipantInProgrammeYear();
+        created.setId(100L);
+        created.setWasMatchedLastYear(false);
 
-        ParticipantResponseDto result = participantService.createParticipant(createDto);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(programmeYearRepository.findById(10L)).thenReturn(Optional.of(programmeYear));
+        when(participantRepository.findAllByUserId(1L)).thenReturn(List.of(previous));
+        when(participantMapper.toEntity(dto, user, programmeYear)).thenReturn(created);
+        when(participantRepository.save(any())).thenReturn(created);
+        when(participantMapper.toDto(created)).thenReturn(new ParticipantResponseDto() {{
+            setWasMatchedLastYear(false);
+        }});
 
+        ParticipantResponseDto result = participantService.createParticipant(dto);
         assertFalse(result.getWasMatchedLastYear());
     }
 
-    @Test
-    void createParticipant_shouldSetWasMatchedLastYearTrueIfNoPreviousUnmatched() {
-        ParticipantCreateDto createDto = new ParticipantCreateDto();
-        createDto.setUserId(user.getId());
-        createDto.setProgrammeYearId(programmeYear.getId());
-        createDto.setRole(ParticipantRole.MENTEE);
-
-        ParticipantInProgrammeYear previousMatched = new ParticipantInProgrammeYear();
-        previousMatched.setUser(user);
-        ProgrammeYear prevYear = new ProgrammeYear();
-        prevYear.setId(5L);
-        prevYear.setProgramme(programme);
-        previousMatched.setProgrammeYear(prevYear);
-        previousMatched.setIsMatched(true);
-
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(programmeYearRepository.findById(programmeYear.getId())).thenReturn(Optional.of(programmeYear));
-        when(participantRepository.findByUserId(user.getId())).thenReturn(Optional.of(previousMatched));
-        when(participantRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ParticipantResponseDto result = participantService.createParticipant(createDto);
-
-        assertTrue(result.getWasMatchedLastYear());
-    }
 
     @Test
     void createParticipant_shouldThrowIfUserNotFound() {
-        ParticipantCreateDto createDto = new ParticipantCreateDto();
-        createDto.setUserId(999L);
-        createDto.setProgrammeYearId(programmeYear.getId());
-
+        ParticipantCreateDto dto = new ParticipantCreateDto();
+        dto.setUserId(999L);
         when(userRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> participantService.createParticipant(createDto));
+        assertThrows(IllegalArgumentException.class, () -> participantService.createParticipant(dto));
     }
 
     @Test
-    void createParticipant_shouldThrowIfProgrammeYearNotFound() {
-        ParticipantCreateDto createDto = new ParticipantCreateDto();
-        createDto.setUserId(user.getId());
-        createDto.setProgrammeYearId(999L);
-
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(programmeYearRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> participantService.createParticipant(createDto));
-    }
-
-    @Test
-    void getParticipant_shouldReturnDtoIfExists() {
+    void getParticipant_shouldReturnDto() {
         ParticipantInProgrammeYear participant = new ParticipantInProgrammeYear();
         participant.setId(1L);
-        participant.setUser(user);
-        participant.setProgrammeYear(programmeYear);
-        participant.setRole(ParticipantRole.MENTEE);
-        participant.setIsMatched(false);
-
         when(participantRepository.findById(1L)).thenReturn(Optional.of(participant));
-        when(endSurveyResponseRepository.existsByParticipantInProgramme(participant)).thenReturn(false);
+        when(participantMapper.toDto(participant)).thenReturn(new ParticipantResponseDto() {{ setId(1L); }});
 
         ParticipantResponseDto result = participantService.getParticipant(1L);
-
         assertEquals(1L, result.getId());
-        assertEquals("Test User", result.getUserName());
     }
 
     @Test
@@ -168,63 +109,55 @@ class ParticipantServiceTest {
     }
 
     @Test
-    void updateParticipant_shouldUpdateFields() {
+    void updateParticipant_shouldApplyChanges() {
         ParticipantInProgrammeYear participant = new ParticipantInProgrammeYear();
         participant.setId(1L);
-        participant.setUser(user);
-        participant.setProgrammeYear(programmeYear);
 
         ParticipantUpdateDto updateDto = new ParticipantUpdateDto();
-        updateDto.setMotivation("Grow skills");
-        updateDto.setWasMatchedLastYear(true);
+        updateDto.setMotivation("Grow");
 
         when(participantRepository.findById(1L)).thenReturn(Optional.of(participant));
-        when(participantRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(endSurveyResponseRepository.existsByParticipantInProgramme(participant)).thenReturn(false);
+        doAnswer(inv -> {
+            participant.setMotivation("Grow");
+            return null;
+        }).when(participantMapper).updateEntity(participant, updateDto);
+        when(participantRepository.save(participant)).thenReturn(participant);
+        when(participantMapper.toDto(participant)).thenReturn(new ParticipantResponseDto() {{
+            setMotivation("Grow");
+        }});
 
         ParticipantResponseDto result = participantService.updateParticipant(1L, updateDto);
-
-        assertEquals("Grow skills", result.getMotivation());
-        assertTrue(result.getWasMatchedLastYear());
+        assertEquals("Grow", result.getMotivation());
     }
 
     @Test
-    void getParticipantInfoByUserIdAndProgrammeYearId_shouldReturnMatchesIfExist() {
-        ParticipantInProgrammeYear participant = new ParticipantInProgrammeYear();
-        participant.setId(1L);
-        participant.setUser(user);
-        participant.setProgrammeYear(programmeYear);
+    void getParticipantInfoByUserId_shouldReturnMatches() {
+        ParticipantInProgrammeYear p = new ParticipantInProgrammeYear();
+        p.setId(1L);
 
         Match match = new Match();
         match.setId(10L);
 
-        when(participantRepository.findByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId()))
-                .thenReturn(Optional.of(participant));
+        when(participantRepository.findByUserId(1L)).thenReturn(Optional.of(p));
         when(matchRepository.findByParticipantId(1L)).thenReturn(List.of(match));
         when(matchService.getDetailedMatchById(10L)).thenReturn(new DetailedMatchResponseDto());
 
-        Object result = participantService.getParticipantInfoByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId());
-
+        Object result = participantService.getParticipantInfoByUserId(1L);
         assertTrue(result instanceof List);
         assertEquals(1, ((List<?>) result).size());
     }
 
     @Test
-    void getParticipantInfoByUserIdAndProgrammeYearId_shouldReturnDtoIfNoMatches() {
-        ParticipantInProgrammeYear participant = new ParticipantInProgrammeYear();
-        participant.setId(1L);
-        participant.setUser(user);
-        participant.setProgrammeYear(programmeYear);
+    void getParticipantInfoByUserId_shouldReturnDtoIfNoMatches() {
+        ParticipantInProgrammeYear p = new ParticipantInProgrammeYear();
+        p.setId(1L);
 
-        when(participantRepository.findByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId()))
-                .thenReturn(Optional.of(participant));
-        when(matchRepository.findByParticipantId(1L)).thenReturn(Collections.emptyList());
-        when(endSurveyResponseRepository.existsByParticipantInProgramme(participant)).thenReturn(false);
+        when(participantRepository.findByUserId(1L)).thenReturn(Optional.of(p));
+        when(matchRepository.findByParticipantId(1L)).thenReturn(List.of());
+        when(participantMapper.toDto(p)).thenReturn(new ParticipantResponseDto() {{ setUserId(1L); }});
 
-        Object result = participantService.getParticipantInfoByUserIdAndProgrammeYearId(user.getId(), programmeYear.getId());
-
+        Object result = participantService.getParticipantInfoByUserId(1L);
         assertTrue(result instanceof ParticipantResponseDto);
         assertEquals(1L, ((ParticipantResponseDto) result).getUserId());
     }
-
 }

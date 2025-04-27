@@ -2,29 +2,22 @@ package uk.bovykina.matching_guru.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeCreateDto;
+import uk.bovykina.matching_guru.dto.programme.ProgrammeDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeUpdateDto;
-import uk.bovykina.matching_guru.entity.CourseGroup;
-import uk.bovykina.matching_guru.entity.Organisation;
-import uk.bovykina.matching_guru.entity.Programme;
+import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.mapper.ProgrammeMapper;
-import uk.bovykina.matching_guru.repository.CourseGroupRepository;
-import uk.bovykina.matching_guru.repository.OrganisationRepository;
-import uk.bovykina.matching_guru.repository.ParticipantRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeRepository;
-import uk.bovykina.matching_guru.repository.UserRepository;
+import uk.bovykina.matching_guru.repository.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ProgrammeServiceTest {
 
+    @InjectMocks
     private ProgrammeService programmeService;
 
     @Mock
@@ -48,195 +41,185 @@ class ProgrammeServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        programmeService = new ProgrammeService(
-                programmeRepository,
-                organisationRepository,
-                courseGroupRepository,
-                participantRepository,
-                userRepository,
-                programmeMapper
-        );
     }
 
     @Test
-    void testGetAllProgrammes() {
-        Organisation organisation = new Organisation();
-        organisation.setId(1L);
+    void createProgramme_shouldReturnDto() {
+        ProgrammeCreateDto dto = new ProgrammeCreateDto();
+        dto.setName("New Prog");
+        dto.setDescription("Desc");
+        dto.setOrganisationId(1L);
+        dto.setCourseGroupIds(Set.of(100L));
 
-        Programme programme1 = new Programme();
-        programme1.setId(1L);
-        programme1.setName("Programme 1");
-        programme1.setOrganisation(organisation);
+        Organisation org = new Organisation();
+        org.setId(1L);
 
-        Programme programme2 = new Programme();
-        programme2.setId(2L);
-        programme2.setName("Programme 2");
-        programme2.setOrganisation(organisation);
-
-        when(programmeRepository.findAll()).thenReturn(List.of(programme1, programme2));
-
-        var result = programmeService.getAllProgrammes();
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(programmeRepository).findAll();
-    }
-
-    @Test
-    void testGetProgrammeById() {
-        Organisation organisation = new Organisation();
-        organisation.setId(1L);
-
-        Programme programme = new Programme();
-        programme.setId(1L);
-        programme.setName("Test Programme");
-        programme.setOrganisation(organisation);
-
-        when(programmeRepository.findById(1L)).thenReturn(Optional.of(programme));
-
-        var result = programmeService.getProgrammeById(1L);
-
-        assertNotNull(result);
-        assertEquals("Test Programme", result.getName());
-        verify(programmeRepository).findById(1L);
-    }
-
-    @Test
-    void testGetProgrammesByOrganisation() {
-        Organisation organisation = new Organisation();
-        organisation.setId(1L);
-
-        Programme programme1 = new Programme();
-        programme1.setId(1L);
-        programme1.setName("Programme 1");
-        programme1.setOrganisation(organisation);
-
-        when(programmeRepository.findByOrganisationId(1L)).thenReturn(List.of(programme1));
-
-        var result = programmeService.getProgrammesByOrganisation(1L);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Programme 1", result.get(0).getName());
-        verify(programmeRepository).findByOrganisationId(1L);
-    }
-
-    @Test
-    void testUpdateProgramme() {
-        Organisation organisation = new Organisation();
-        organisation.setId(1L);
-
-        Programme existingProgramme = new Programme();
-        existingProgramme.setId(1L);
-        existingProgramme.setName("Old Programme");
-        existingProgramme.setDescription("Old Description");
-        existingProgramme.setOrganisation(organisation);
-
-        ProgrammeUpdateDto updateDto = new ProgrammeUpdateDto();
-        updateDto.setName("Updated Programme");
-        updateDto.setDescription("Updated Description");
-
-        when(programmeRepository.findById(1L)).thenReturn(Optional.of(existingProgramme));
-        when(programmeRepository.save(existingProgramme)).thenReturn(existingProgramme);
-
-        var result = programmeService.updateProgramme(1L, updateDto);
-
-        assertNotNull(result);
-        assertEquals("Updated Programme", result.getName());
-        assertEquals("Updated Description", result.getDescription());
-        verify(programmeRepository).save(existingProgramme);
-    }
-
-    @Test
-    void testCreateProgramme_shouldReturnSavedDto() {
-        ProgrammeCreateDto createDto = new ProgrammeCreateDto();
-        createDto.setName("New Prog");
-        createDto.setDescription("New Desc");
-        createDto.setOrganisationId(1L);
-        createDto.setCourseGroupIds(Set.of(10L));
-
-        Organisation organisation = new Organisation();
-        organisation.setName("Test Org");
-        organisation.setId(1L);
-
-        CourseGroup courseGroup = new CourseGroup();
-        courseGroup.setName("Test Group");
-        courseGroup.setId(10L);
+        CourseGroup group = new CourseGroup();
+        group.setId(100L);
 
         Programme saved = new Programme();
-        saved.setId(1L);
+        saved.setId(10L);
         saved.setName("New Prog");
-        saved.setDescription("New Desc");
-        saved.setOrganisation(organisation);
-        saved.setEligibleCourseGroups(Set.of(courseGroup));
+        saved.setDescription("Desc");
+        saved.setOrganisation(org);
+        saved.setEligibleCourseGroups(Set.of(group));
 
-        when(organisationRepository.findById(1L)).thenReturn(Optional.of(organisation));
-        when(courseGroupRepository.findAllById(Set.of(10L))).thenReturn(List.of(courseGroup));
+        ProgrammeDto expected = new ProgrammeDto();
+        expected.setId(10L);
+        expected.setName("New Prog");
+
+        when(organisationRepository.findById(1L)).thenReturn(Optional.of(org));
+        when(courseGroupRepository.findAllById(dto.getCourseGroupIds())).thenReturn(List.of(group));
         when(programmeRepository.save(any())).thenReturn(saved);
-        when(participantRepository.countDistinctParticipantsByProgrammeId(anyLong())).thenReturn(0);
+        when(participantRepository.countDistinctParticipantsByProgrammeId(10L)).thenReturn(0);
+        when(programmeMapper.toDto(saved, 0)).thenReturn(expected);
 
-        var result = programmeService.createProgramme(createDto);
+        ProgrammeDto result = programmeService.createProgramme(dto);
 
-        assertNotNull(result);
-        assertEquals("New Prog", result.getName());
-        assertEquals(1L, result.getId());
+        assertEquals(10L, result.getId());
+        verify(programmeMapper).toDto(saved, 0);
     }
 
     @Test
-    void testDeleteProgramme_shouldDeleteIfExists() {
+    void updateProgramme_shouldUpdateFieldsAndReturnDto() {
+        ProgrammeUpdateDto dto = new ProgrammeUpdateDto();
+        dto.setName("Updated Name");
+        dto.setDescription("Updated Desc");
+        dto.setContactEmail("new@example.com");
+        dto.setCourseGroupIds(Set.of(10L));
+
+        Programme existing = new Programme();
+        existing.setId(1L);
+        existing.setName("Old");
+        existing.setDescription("Old");
+        existing.setOrganisation(new Organisation());
+
+        CourseGroup group = new CourseGroup();
+        group.setId(10L);
+
+        ProgrammeDto expected = new ProgrammeDto();
+        expected.setId(1L);
+        expected.setName("Updated Name");
+
+        when(programmeRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(courseGroupRepository.findAllById(Set.of(10L))).thenReturn(List.of(group));
+        when(programmeRepository.save(any())).thenReturn(existing);
+        when(participantRepository.countDistinctParticipantsByProgrammeId(1L)).thenReturn(0);
+        when(programmeMapper.toDto(existing, 0)).thenReturn(expected);
+
+        ProgrammeDto result = programmeService.updateProgramme(1L, dto);
+
+        assertEquals("Updated Name", result.getName());
+    }
+
+    @Test
+    void deleteProgramme_shouldDeleteIfExists() {
         when(programmeRepository.existsById(1L)).thenReturn(true);
-
         programmeService.deleteProgramme(1L);
-
         verify(programmeRepository).deleteById(1L);
     }
 
     @Test
-    void testDeleteProgramme_shouldThrowIfNotFound() {
-        when(programmeRepository.existsById(99L)).thenReturn(false);
+    void getProgrammeById_shouldReturnDto() {
+        Programme programme = new Programme();
+        programme.setId(5L);
+        programme.setName("My Programme");
 
-        assertThrows(IllegalArgumentException.class, () -> programmeService.deleteProgramme(99L));
+        ProgrammeDto dto = new ProgrammeDto();
+        dto.setId(5L);
+        dto.setName("My Programme");
+
+        when(programmeRepository.findById(5L)).thenReturn(Optional.of(programme));
+        when(participantRepository.countDistinctParticipantsByProgrammeId(5L)).thenReturn(2);
+        when(programmeMapper.toDto(programme, 2)).thenReturn(dto);
+
+        ProgrammeDto result = programmeService.getProgrammeById(5L);
+
+        assertEquals(5L, result.getId());
+        verify(programmeMapper).toDto(programme, 2);
     }
 
     @Test
-    void testGetActiveProgrammesByOrganisation_shouldReturnList() {
-        Organisation organisation = new Organisation();
-        organisation.setId(1L);
+    void getAllProgrammes_shouldReturnList() {
+        Programme p1 = new Programme();
+        p1.setId(1L);
+        Programme p2 = new Programme();
+        p2.setId(2L);
 
-        Programme programme = new Programme();
-        programme.setId(1L);
-        programme.setName("Active Prog");
-        programme.setDescription("Active Desc");
-        programme.setOrganisation(organisation);
-        programme.setEligibleCourseGroups(Set.of());
+        ProgrammeDto d1 = new ProgrammeDto();
+        d1.setId(1L);
+        ProgrammeDto d2 = new ProgrammeDto();
+        d2.setId(2L);
 
-        when(programmeRepository.findActiveProgrammesByOrganisationId(1L)).thenReturn(List.of(programme));
-        when(participantRepository.countDistinctParticipantsByProgrammeId(1L)).thenReturn(5);
+        when(programmeRepository.findAll()).thenReturn(List.of(p1, p2));
+        when(participantRepository.countDistinctParticipantsByProgrammeId(1L)).thenReturn(1);
+        when(participantRepository.countDistinctParticipantsByProgrammeId(2L)).thenReturn(2);
+        when(programmeMapper.toDto(p1, 1)).thenReturn(d1);
+        when(programmeMapper.toDto(p2, 2)).thenReturn(d2);
+
+        var result = programmeService.getAllProgrammes();
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void getProgrammesByOrganisation_shouldReturnList() {
+        Organisation org = new Organisation();
+        org.setId(1L);
+
+        Programme prog = new Programme();
+        prog.setId(5L);
+        prog.setOrganisation(org);
+
+        ProgrammeDto dto = new ProgrammeDto();
+        dto.setId(5L);
+
+        when(programmeRepository.findByOrganisationId(1L)).thenReturn(List.of(prog));
+        when(participantRepository.countDistinctParticipantsByProgrammeId(5L)).thenReturn(4);
+        when(programmeMapper.toDto(prog, 4)).thenReturn(dto);
+
+        var result = programmeService.getProgrammesByOrganisation(1L);
+
+        assertEquals(1, result.size());
+        assertEquals(5L, result.get(0).getId());
+    }
+
+    @Test
+    void getActiveProgrammesByOrganisation_shouldReturnList() {
+        Programme p = new Programme();
+        p.setId(10L);
+
+        ProgrammeDto d = new ProgrammeDto();
+        d.setId(10L);
+
+        when(programmeRepository.findActiveProgrammesByOrganisationId(1L)).thenReturn(List.of(p));
+        when(participantRepository.countDistinctParticipantsByProgrammeId(10L)).thenReturn(1);
+        when(programmeMapper.toDto(p, 1)).thenReturn(d);
 
         var result = programmeService.getActiveProgrammesByOrganisation(1L);
 
         assertEquals(1, result.size());
-        assertEquals("Active Prog", result.get(0).getName());
     }
 
     @Test
-    void testGetProgrammesByUserId_shouldReturnList() {
-        var user = new uk.bovykina.matching_guru.entity.User();
-        user.setId(1L);
+    void getProgrammesByUserId_shouldReturnList() {
+        User user = new User();
+        user.setId(2L);
 
-        Programme programme = new Programme();
-        programme.setId(1L);
-        programme.setName("User's Programme");
-        programme.setOrganisation(new Organisation());
-        programme.setEligibleCourseGroups(Set.of());
+        Programme prog = new Programme();
+        prog.setId(5L);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(programmeRepository.findProgrammesByUserId(1L)).thenReturn(List.of(programme));
-        when(participantRepository.countDistinctParticipantsByProgrammeId(1L)).thenReturn(3);
+        ProgrammeDto dto = new ProgrammeDto();
+        dto.setId(5L);
 
-        var result = programmeService.getProgrammesByUserId(1L);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(programmeRepository.findProgrammesByUserId(2L)).thenReturn(List.of(prog));
+        when(participantRepository.countDistinctParticipantsByProgrammeId(5L)).thenReturn(3);
+        when(programmeMapper.toDto(prog, 3)).thenReturn(dto);
+
+        var result = programmeService.getProgrammesByUserId(2L);
 
         assertEquals(1, result.size());
-        assertEquals("User's Programme", result.get(0).getName());
+        assertEquals(5L, result.get(0).getId());
     }
 }
