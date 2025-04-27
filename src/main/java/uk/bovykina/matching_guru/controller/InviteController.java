@@ -13,6 +13,9 @@ public class InviteController {
 
     private final InviteService inviteTokenService;
 
+    /**
+     * Creates a new invite token for a coordinator.
+     */
     @PostMapping("/create")
     public ResponseEntity<InviteToken> createInvite(
             @RequestParam Long organisationId,
@@ -23,12 +26,18 @@ public class InviteController {
         return ResponseEntity.ok(invite);
     }
 
+    /**
+     * Validates an invite token.
+     */
     @GetMapping("/validate")
     public ResponseEntity<InviteToken> validateInvite(@RequestParam String token) {
         InviteToken invite = inviteTokenService.validateToken(token);
         return ResponseEntity.ok(invite);
     }
 
+    /**
+     * Marks an invite token as used.
+     */
     @PostMapping("/mark-used")
     public ResponseEntity<Void> markUsed(@RequestParam String token) {
         inviteTokenService.markTokenAsUsed(token);

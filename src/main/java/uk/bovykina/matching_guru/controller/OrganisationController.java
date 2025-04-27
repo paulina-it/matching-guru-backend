@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationCreateDto;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationDto;
 import uk.bovykina.matching_guru.dto.organisation.OrganisationUpdateDto;
@@ -19,7 +18,6 @@ import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.service.OrganisationService;
 import uk.bovykina.matching_guru.service.UserService;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +31,9 @@ public class OrganisationController {
     private final UserService userService;
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
+    /**
+     * Creates a new organisation and associates it with the authenticated admin.
+     */
     @PostMapping("/create")
     public ResponseEntity<?> createOrganisation(
             @RequestBody OrganisationCreateDto organisationCreateDto) {
@@ -61,18 +62,27 @@ public class OrganisationController {
         }
     }
 
+    /**
+     * Validates an invite token for joining an organisation.
+     */
     @GetMapping("/validate-token")
     public ResponseEntity<Boolean> validateInviteToken(@RequestParam String token) {
         boolean isValid = organisationService.validateInviteToken(token);
         return ResponseEntity.ok(isValid);
     }
 
+    /**
+     * Deletes an invite token by its value.
+     */
     @DeleteMapping("/invite/{token}")
     public ResponseEntity<Void> deleteInviteToken(@PathVariable String token) {
         organisationService.deleteInviteToken(token);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Retrieves an organisation by its ID.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<OrganisationDto> getOrganisationById(@PathVariable Long id) {
         return organisationService.getOrganisationById(id)
@@ -80,12 +90,18 @@ public class OrganisationController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Retrieves all organisations in the system.
+     */
     @GetMapping
     public ResponseEntity<List<OrganisationDto>> getAllOrganisations() {
         List<OrganisationDto> organisations = organisationService.getAllOrganisations();
         return ResponseEntity.ok(organisations);
     }
 
+    /**
+     * Updates an organisation with new data.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<OrganisationDto> updateOrganisation(
             @PathVariable Long id,
@@ -94,15 +110,26 @@ public class OrganisationController {
         return ResponseEntity.ok(updatedOrganisation);
     }
 
+    /**
+     * Deletes an organisation by its ID.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrganisation(@PathVariable Long id) {
         organisationService.deleteOrganisation(id);
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Regenerates the join code for the specified organisation.
+     */
+    @PutMapping("/{id}/regenerate-join-code")
+    public ResponseEntity<OrganisationDto> regenerateJoinCode(@PathVariable Long id) {
+        OrganisationDto updated = organisationService.regenerateJoinCode(id);
+        return ResponseEntity.ok(updated);
+    }
 
     /**
-     * Fetches organisation info available to admins.
+     * Fetches organisation status details for the authenticated admin.
      */
     @GetMapping("/admin/organisation-status")
     public ResponseEntity<?> checkAdminOrganisationStatus() {
@@ -117,13 +144,11 @@ public class OrganisationController {
         try {
             UserResponseDto userDto = userService.getUserByEmail(email);
 
-            // Check ADMIN role
             if (!UserRole.ADMIN.equals(userDto.getRole())) {
                 logger.warn("Access denied: Non-admin user attempted to access /admin/organisation-status, email: {}", email);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied: User is not an admin");
             }
 
-            // Check if the admin has an associated organisation
             if (userDto.getOrganisationId() == null) {
                 return ResponseEntity.ok("Admin has no organisation");
             }
@@ -139,6 +164,9 @@ public class OrganisationController {
         }
     }
 
+    /**
+     * Allows an authenticated user to join an organisation using a join code.
+     */
     @PostMapping("/join")
     public ResponseEntity<?> joinOrganisation(@RequestParam String joinCode) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -150,7 +178,6 @@ public class OrganisationController {
         String email = authentication.getName();
         try {
             UserResponseDto userDto = userService.getUserByEmail(email);
-
             OrganisationDto organisation = organisationService.joinOrganisation(userDto.getId(), joinCode);
             return ResponseEntity.ok(organisation);
 
@@ -162,5 +189,4 @@ public class OrganisationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while joining organisation");
         }
     }
-
 }

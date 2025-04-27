@@ -15,6 +15,9 @@ public class CsvExportController {
 
     private final CsvExportService csvExportService;
 
+    /**
+     * Exports match data for a specific programme year as a paginated CSV file.
+     */
     @GetMapping("/matches")
     public ResponseEntity<InputStreamResource> exportMatchesToCsv(
             @RequestParam Long programmeYearId,

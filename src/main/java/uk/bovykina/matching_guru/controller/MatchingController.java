@@ -1,6 +1,7 @@
 package uk.bovykina.matching_guru.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,6 @@ import uk.bovykina.matching_guru.algorithms.CollaborativeFilteringService;
 import uk.bovykina.matching_guru.algorithms.GaleShapleyService;
 import uk.bovykina.matching_guru.dto.match.MatchResponseDto;
 import uk.bovykina.matching_guru.service.MatchService;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/matching")
@@ -24,6 +24,9 @@ public class MatchingController {
     private final CollaborativeFilteringService collaborativeFilteringService;
     private final MatchService matchService;
 
+    /**
+     * Runs the specified matching algorithm for a given programme year.
+     */
     @PostMapping("/{algorithm}/run")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void matchParticipants(
@@ -51,6 +54,9 @@ public class MatchingController {
         }
     }
 
+    /**
+     * Retrieves a paginated list of matches for a specific programme year.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Page<MatchResponseDto>> getMatchesByProgrammeYearId(
             @PathVariable Long id,

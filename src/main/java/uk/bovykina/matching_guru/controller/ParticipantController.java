@@ -11,13 +11,9 @@ import uk.bovykina.matching_guru.dto.participant.FeedbackSubmissionDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantCreateDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantResponseDto;
 import uk.bovykina.matching_guru.dto.participant.ParticipantUpdateDto;
-import uk.bovykina.matching_guru.entity.EndSurveyResponse;
-import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
-import uk.bovykina.matching_guru.entity.ProgrammeYear;
 import uk.bovykina.matching_guru.service.EndSurveyResponseService;
 import uk.bovykina.matching_guru.service.ParticipantService;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -29,6 +25,9 @@ public class ParticipantController {
     private final ParticipantService participantService;
     private final EndSurveyResponseService endSurveyResponseService;
 
+    /**
+     * Creates a new participant profile.
+     */
     @PostMapping("/create")
     public ResponseEntity<?> createParticipant(@Valid @RequestBody ParticipantCreateDto participantCreateDto) {
         try {
@@ -44,6 +43,9 @@ public class ParticipantController {
         }
     }
 
+    /**
+     * Retrieves participant details by participant ID.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getParticipant(@PathVariable Long id) {
         try {
@@ -58,6 +60,9 @@ public class ParticipantController {
         }
     }
 
+    /**
+     * Retrieves participant info using the user ID.
+     */
     @GetMapping("/info/{id}")
     public ResponseEntity<?> getParticipantInfoByUserId(@PathVariable Long id) {
         try {
@@ -73,7 +78,9 @@ public class ParticipantController {
         }
     }
 
-
+    /**
+     * Retrieves participant by associated user ID.
+     */
     @GetMapping("/user/{id}")
     public ResponseEntity<?> getParticipantByUserId(@PathVariable Long id) {
         try {
@@ -87,6 +94,10 @@ public class ParticipantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching participant");
         }
     }
+
+    /**
+     * Retrieves all participants.
+     */
     @GetMapping
     public ResponseEntity<List<ParticipantResponseDto>> getAllParticipants() {
         try {
@@ -98,6 +109,9 @@ public class ParticipantController {
         }
     }
 
+    /**
+     * Updates participant details.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateParticipant(
             @PathVariable Long id,
@@ -115,6 +129,9 @@ public class ParticipantController {
         }
     }
 
+    /**
+     * Retrieves paginated and filtered list of participants in a programme year.
+     */
     @GetMapping("/programme-year/{programmeYearId}")
     public ResponseEntity<?> getParticipantsByProgrammeYearId(
             @PathVariable Long programmeYearId,
@@ -131,6 +148,9 @@ public class ParticipantController {
         return ResponseEntity.ok(participants);
     }
 
+    /**
+     * Retrieves detailed participant data for a programme year.
+     */
     @GetMapping("/programme-year/detailed/{programmeYearId}")
     public ResponseEntity<List<ParticipantResponseDto>> getDetailedParticipantsByProgrammeYearId(
             @PathVariable Long programmeYearId
@@ -139,6 +159,9 @@ public class ParticipantController {
         return ResponseEntity.ok(participants);
     }
 
+    /**
+     * Retrieves participant info by user and programme year IDs.
+     */
     @GetMapping("/info/{userId}/programmeYear/{programmeYearId}")
     public ResponseEntity<?> getParticipantInfoByUserIdAndProgrammeYearId(
             @PathVariable Long userId,
@@ -162,6 +185,9 @@ public class ParticipantController {
         }
     }
 
+    /**
+     * Submits the feedback confirmation code after mentoring ends.
+     */
     @PostMapping("/feedback")
     public ResponseEntity<?> submitFeedbackCode(@RequestBody FeedbackSubmissionDto dto) {
         try {
@@ -174,19 +200,4 @@ public class ParticipantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to submit feedback.");
         }
     }
-
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<?> deleteParticipant(@PathVariable Long id) {
-//        try {
-//            participantService.deleteParticipant(id);
-//            log.info("Participant deleted with id: {}", id);
-//            return ResponseEntity.noContent().build();
-//        } catch (IllegalArgumentException e) {
-//            log.error("Participant not found for deletion with id: {}", id, e);
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-//        } catch (Exception e) {
-//            log.error("Error while deleting participant with id: {}", id, e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting participant");
-//        }
-//    }
 }

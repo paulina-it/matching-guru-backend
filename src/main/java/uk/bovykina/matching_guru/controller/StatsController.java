@@ -15,8 +15,12 @@ import uk.bovykina.matching_guru.service.StatsService;
 @RequiredArgsConstructor
 @Slf4j
 public class StatsController {
+
     private final StatsService statsService;
 
+    /**
+     * Returns match statistics for the specified organisation.
+     */
     @GetMapping("/match-rates/organisation/{organisationId}")
     public OrganisationMatchStatsDto getOrganisationMatchStats(@PathVariable Long organisationId) {
         log.info("Fetching match stats for organisation ID: {}", organisationId);
@@ -33,6 +37,9 @@ public class StatsController {
         return stats;
     }
 
+    /**
+     * Returns engagement statistics for the specified organisation.
+     */
     @GetMapping("/engagement/organisation/{organisationId}")
     public OrganisationEngagementStatsDto getEngagementStats(@PathVariable Long organisationId) {
         log.info("Fetching engagement stats for organisation ID: {}", organisationId);
@@ -44,6 +51,9 @@ public class StatsController {
         return stats;
     }
 
+    /**
+     * Returns demographic statistics for the specified organisation.
+     */
     @GetMapping("/demographics/organisation/{organisationId}")
     public ResponseEntity<OrganisationDemographicStatsDto> demographics(
             @Parameter(example = "10") @PathVariable Long organisationId) {

@@ -18,6 +18,9 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
+    /**
+     * Retrieves the admin dashboard for the authenticated coordinator.
+     */
     @GetMapping("/admin")
     public ResponseEntity<AdminDashboardDto> getAdminDashboard() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -32,6 +35,9 @@ public class DashboardController {
         return ResponseEntity.status(403).build();
     }
 
+    /**
+     * Retrieves the participant dashboard for the authenticated user.
+     */
     @GetMapping("/participant")
     public ResponseEntity<ParticipantDashboardDto> getParticipantDashboard() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();

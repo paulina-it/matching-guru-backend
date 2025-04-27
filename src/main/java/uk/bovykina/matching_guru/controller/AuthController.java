@@ -8,16 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import uk.bovykina.matching_guru.dto.organisation.OrganisationDto;
 import uk.bovykina.matching_guru.dto.user.*;
-import uk.bovykina.matching_guru.entity.enums.UserRole;
 import uk.bovykina.matching_guru.exception.UserNotFoundException;
 import uk.bovykina.matching_guru.service.OrganisationService;
 import uk.bovykina.matching_guru.service.UserService;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,9 +24,8 @@ public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     /**
-     * Checks if the user is authenticated.
+     * Checks whether the current user is authenticated and retrieves their profile.
      */
-
     @GetMapping("/status")
     public ResponseEntity<?> checkAuthStatus() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -63,7 +57,7 @@ public class AuthController {
     }
 
     /**
-     * Handles user login.
+     * Processes a login request using email and password credentials.
      */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody UserLoginDto request) {
@@ -79,7 +73,7 @@ public class AuthController {
     }
 
     /**
-     * Handles user registration.
+     * Registers a new user and logs them in upon successful creation.
      */
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@RequestBody UserCreateDto userCreateDto) {
@@ -96,7 +90,7 @@ public class AuthController {
     }
 
     /**
-     * Handles user password change using old password.
+     * Allows the authenticated user to update their password by providing the current one.
      */
     @PostMapping("/change-password")
     public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDto dto) {
@@ -118,5 +112,4 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred");
         }
     }
-
 }

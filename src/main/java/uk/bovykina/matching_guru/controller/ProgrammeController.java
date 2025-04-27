@@ -36,6 +36,9 @@ public class ProgrammeController {
         return UserRole.ADMIN.equals(userDto.getRole());
     }
 
+    /**
+     * Creates a new programme (admin only).
+     */
     @PostMapping("/create")
     public ResponseEntity<?> createProgramme(@Valid @RequestBody ProgrammeCreateDto programmeCreateDto) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -68,6 +71,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Retrieves a programme by ID.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<ProgrammeDto> getProgrammeById(@PathVariable Long id) {
         try {
@@ -79,6 +85,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Retrieves all programmes.
+     */
     @GetMapping
     public ResponseEntity<List<ProgrammeDto>> getAllProgrammes(
             @RequestParam(defaultValue = "0") int page,
@@ -92,6 +101,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Retrieves all programmes for a given organisation.
+     */
     @GetMapping("/organisation/{organisationId}")
     public ResponseEntity<List<ProgrammeDto>> getProgrammesByOrganisation(@PathVariable Long organisationId) {
         try {
@@ -102,6 +114,10 @@ public class ProgrammeController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
+
+    /**
+     * Retrieves active programmes for a given organisation.
+     */
     @GetMapping("/organisation/{organisationId}/active")
     public ResponseEntity<List<ProgrammeDto>> getActiveProgrammesByOrganisation(@PathVariable Long organisationId) {
         try {
@@ -113,6 +129,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Retrieves programmes the user is associated with.
+     */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ProgrammeDto>> getProgrammesByUserId(@PathVariable Long userId) {
         try {
@@ -127,6 +146,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Retrieves both joined and available programmes for a participant.
+     */
     @GetMapping("/participant/{userId}/my-and-available")
     public ResponseEntity<ProgrammeParticipantViewDto> getMyAndAvailableProgrammes(@PathVariable Long userId) {
         try {
@@ -141,6 +163,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Updates an existing programme.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProgramme(
             @PathVariable Long id,
@@ -158,6 +183,9 @@ public class ProgrammeController {
         }
     }
 
+    /**
+     * Deletes a programme by ID.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProgramme(@PathVariable Long id) {
         try {

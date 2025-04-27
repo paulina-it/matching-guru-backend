@@ -21,16 +21,25 @@ public class MatchController {
 
     private final MatchService matchService;
 
+    /**
+     * Retrieves a basic match by its ID.
+     */
     @GetMapping("/{matchId}")
     public ResponseEntity<MatchResponseDto> getMatchById(@PathVariable Long matchId) {
         return ResponseEntity.ok(matchService.getMatchById(matchId));
     }
 
+    /**
+     * Retrieves detailed match information by match ID.
+     */
     @GetMapping("/detailed/{matchId}")
     public ResponseEntity<DetailedMatchResponseDto> getDetailedMatch(@PathVariable Long matchId) {
         return ResponseEntity.ok(matchService.getDetailedMatchById(matchId));
     }
 
+    /**
+     * Retrieves detailed match information for a participant in a specific programme year.
+     */
     @GetMapping("/detailed/participant/{participantId}")
     public ResponseEntity<DetailedMatchResponseDto> getDetailedMatchByParticipantId(
             @PathVariable Long participantId,
@@ -40,6 +49,9 @@ public class MatchController {
         return ResponseEntity.ok(matchDto);
     }
 
+    /**
+     * Retrieves a paginated list of matches for a programme year (admin only).
+     */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("/programmeYear/{programmeYearId}")
     public ResponseEntity<Page<MatchResponseDto>> getMatchesByProgrammeYear(
@@ -51,6 +63,9 @@ public class MatchController {
         return ResponseEntity.ok(matchesPage);
     }
 
+    /**
+     * Updates the status of multiple matches.
+     */
     @PatchMapping("/update-status")
     public ResponseEntity<String> updateMatchStatus(@RequestBody MatchStatusUpdateDto request) {
         if (request.getMatchIds() == null || request.getMatchIds().isEmpty()) {
@@ -58,11 +73,12 @@ public class MatchController {
         }
 
         matchService.updateMatchStatus(request.getMatchIds(), request);
-
         return ResponseEntity.ok("Matches updated successfully");
     }
 
-
+    /**
+     * Searches matches by query, status, and sort options.
+     */
     @GetMapping("/search")
     public ResponseEntity<Page<CoordinatorMatchDto>> searchMatches(
             @RequestParam Long programmeYearId,
@@ -79,6 +95,9 @@ public class MatchController {
         return ResponseEntity.ok(matches);
     }
 
+    /**
+     * Processes a participant's decision on a match.
+     */
     @PatchMapping("/decision")
     @PreAuthorize("hasAnyRole('ROLE_USER')")
     public ResponseEntity<String> decideOnMatch(@RequestBody MatchDecisionDto request) {
@@ -86,6 +105,9 @@ public class MatchController {
         return ResponseEntity.ok("Match decision processed successfully");
     }
 
+    /**
+     * Deletes all matches for a given programme year (admin only).
+     */
     @DeleteMapping("/programmeYear/{programmeYearId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<String> deleteMatchesByProgrammeYear(@PathVariable Long programmeYearId) {
