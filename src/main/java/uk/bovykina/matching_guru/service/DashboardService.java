@@ -6,25 +6,19 @@ import org.springframework.stereotype.Service;
 import uk.bovykina.matching_guru.dto.dashboards.*;
 import uk.bovykina.matching_guru.dto.match.MatchSummaryDto;
 import uk.bovykina.matching_guru.dto.programme.ProgrammeYearSummaryDto;
-import uk.bovykina.matching_guru.entity.CommunicationLog;
-import uk.bovykina.matching_guru.entity.Match;
-import uk.bovykina.matching_guru.entity.ParticipantInProgrammeYear;
-import uk.bovykina.matching_guru.entity.ProgrammeYear;
+import uk.bovykina.matching_guru.entity.*;
 import uk.bovykina.matching_guru.entity.enums.MatchStatus;
 import uk.bovykina.matching_guru.repository.*;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class DashboardService {
 
     private final ProgrammeYearRepository programmeYearRepository;
@@ -33,12 +27,15 @@ public class DashboardService {
     private final EndSurveyResponseRepository endSurveyRepository;
     private final CommunicationLogRepository communicationLogRepository;
 
+    /**
+     * Builds the admin dashboard data for a given organisation.
+     */
     public AdminDashboardDto getAdminDashboard(Long organisationId) {
-        log.info("📊 Fetching Admin Dashboard for organisation ID: {}", organisationId);
+        log.info("Fetching Admin Dashboard for organisation ID: {}", organisationId);
 
         List<ProgrammeYear> activeProgrammeYears =
                 programmeYearRepository.findByProgrammeOrganisationIdAndIsActiveTrue(organisationId);
-        log.info("✅ Found {} active programme years", activeProgrammeYears.size());
+        log.info("Found {} active programme years", activeProgrammeYears.size());
 
         List<Long> programmeYearIds = activeProgrammeYears.stream().map(ProgrammeYear::getId).toList();
 
@@ -66,39 +63,37 @@ public class DashboardService {
             );
         }).toList();
 
-
         List<ActivityJoinProjection> joinProjections =
                 participantRepository.findRecentJoinsByOrganisationId(organisationId, LocalDateTime.now().minusDays(21));
-        log.info("🕒 Found {} recent join activity entries", joinProjections.size());
+        log.info("Found {} recent join activity entries", joinProjections.size());
 
         List<RecentActivityDto> activity = new ArrayList<>();
 
         joinProjections.stream()
-                .sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()))
+                .sorted(Comparator.comparing(ActivityJoinProjection::getTimestamp).reversed())
                 .limit(5)
-                .forEach(p -> activity.add(
-                        new RecentActivityDto(
-                                "🧑‍🤝‍🧑 " + p.getCount() + " people joined " + p.getProgrammeYearName(),
-                                p.getTimestamp(),
-                                "/coordinator/programmes/" + p.getProgrammeId() + "/years/" + p.getProgrammeYearId() + "/participants"
-                        )
-                ));
+                .forEach(p -> activity.add(new RecentActivityDto(
+                        p.getCount() + " people joined " + p.getProgrammeYearName(),
+                        p.getTimestamp(),
+                        "/coordinator/programmes/" + p.getProgrammeId() + "/years/" + p.getProgrammeYearId() + "/participants"
+                )));
 
         activeProgrammeYears.forEach(py -> {
             int pendingCount = matchRepository.countPendingMatches(py.getId());
             if (pendingCount > 0) {
-                String description = String.format(
-                        "⏳ %s (%s) has %d pending match%s",
-                        py.getProgramme().getName(),
-                        py.getAcademicYear(),
-                        pendingCount,
-                        pendingCount == 1 ? "" : "es"
-                );
-                String link = "/coordinator/programmes/" + py.getProgramme().getId() + "/years/" + py.getId() + "/matches";
-                activity.add(new RecentActivityDto(description, LocalDateTime.now(), link));
+                activity.add(new RecentActivityDto(
+                        String.format(
+                                "%s (%s) has %d pending match%s",
+                                py.getProgramme().getName(),
+                                py.getAcademicYear(),
+                                pendingCount,
+                                pendingCount == 1 ? "" : "es"
+                        ),
+                        LocalDateTime.now(),
+                        "/coordinator/programmes/" + py.getProgramme().getId() + "/years/" + py.getId() + "/matches"
+                ));
             }
         });
-
 
         double totalParticipants = summaries.stream().mapToInt(ProgrammeYearSummaryDto::getParticipantsCount).sum();
         double totalMatches = summaries.stream().mapToInt(ProgrammeYearSummaryDto::getMatchesCount).sum();
@@ -106,7 +101,7 @@ public class DashboardService {
 
         return new AdminDashboardDto(
                 summaries,
-                activity.stream().sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())).limit(6).toList(),
+                activity.stream().sorted(Comparator.comparing(RecentActivityDto::getTimestamp).reversed()).limit(6).toList(),
                 matchRate,
                 0.0,
                 0.0,
@@ -114,8 +109,11 @@ public class DashboardService {
         );
     }
 
+    /**
+     * Builds a participant dashboard for a given user ID.
+     */
     public ParticipantDashboardDto getParticipantDashboard(Long userId) {
-        log.info("\uD83D\uDCCA Building dashboard for participant user ID: {}", userId);
+        log.info("Building dashboard for participant user ID: {}", userId);
 
         List<ParticipantInProgrammeYear> participations = participantRepository.findAllByUserId(userId);
         List<MatchSummaryDto> matches = new ArrayList<>();
@@ -124,7 +122,6 @@ public class DashboardService {
         boolean hasUnconfirmedMatches = false;
         boolean hasOverdueInteractions = false;
         boolean hasFeedbackPending = false;
-
         LocalDateTime latestInteraction = null;
 
         for (ParticipantInProgrammeYear p : participations) {

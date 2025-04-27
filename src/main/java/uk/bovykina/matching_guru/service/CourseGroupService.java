@@ -3,10 +3,13 @@ package uk.bovykina.matching_guru.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import uk.bovykina.matching_guru.dto.course.*;
+import uk.bovykina.matching_guru.dto.course.CourseGroupCreateDto;
+import uk.bovykina.matching_guru.dto.course.CourseGroupDto;
+import uk.bovykina.matching_guru.dto.course.CourseGroupUpdateDto;
 import uk.bovykina.matching_guru.entity.Course;
 import uk.bovykina.matching_guru.entity.CourseGroup;
 import uk.bovykina.matching_guru.entity.Organisation;
+import uk.bovykina.matching_guru.mapper.CourseGroupMapper;
 import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.CourseRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
@@ -22,100 +25,82 @@ public class CourseGroupService {
     private final CourseGroupRepository courseGroupRepository;
     private final CourseRepository courseRepository;
     private final OrganisationRepository organisationRepository;
+    private final CourseGroupMapper courseGroupMapper;
 
     /**
-     * Create a new course group.
+     * Creates a new course group for a specific organisation.
      */
-    public CourseGroupDto createCourseGroup(CourseGroupCreateDto courseGroupCreateDto) {
-        log.info("🔄 Creating a new course group: {}", courseGroupCreateDto.getName());
-        Organisation organisation = organisationRepository.findById(courseGroupCreateDto.getOrganisationId())
+    public CourseGroupDto createCourseGroup(CourseGroupCreateDto dto) {
+        log.info("Creating course group: {}", dto.getName());
+
+        Organisation organisation = organisationRepository.findById(dto.getOrganisationId())
                 .orElseThrow(() -> {
-                    log.error("❌ Organisation not found: {}", courseGroupCreateDto.getOrganisationId());
-                    return new IllegalArgumentException("Organisation not found with ID: " + courseGroupCreateDto.getOrganisationId());
+                    log.error("Organisation not found: {}", dto.getOrganisationId());
+                    return new IllegalArgumentException("Organisation not found with ID: " + dto.getOrganisationId());
                 });
 
         CourseGroup courseGroup = new CourseGroup();
-        courseGroup.setName(courseGroupCreateDto.getName());
+        courseGroup.setName(dto.getName());
         courseGroup.setOrganisation(organisation);
 
-        CourseGroup savedCourseGroup = courseGroupRepository.save(courseGroup);
-        log.info("✅ Course group created successfully: {}", savedCourseGroup.getId());
-        return toCourseGroupDto(savedCourseGroup);
+        CourseGroup saved = courseGroupRepository.save(courseGroup);
+        return courseGroupMapper.toDto(saved);
     }
 
     /**
-     * Retrieve a course group by ID.
+     * Retrieves a course group by its ID.
      */
-    public CourseGroupDto getCourseGroupById(Long courseGroupId) {
-        log.info("🔄 Fetching course group ID: {}", courseGroupId);
-        CourseGroup courseGroup = courseGroupRepository.findById(courseGroupId)
+    public CourseGroupDto getCourseGroupById(Long id) {
+        log.info("Fetching course group ID: {}", id);
+
+        CourseGroup courseGroup = courseGroupRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Course group not found: {}", courseGroupId);
-                    return new IllegalArgumentException("Course group not found with ID: " + courseGroupId);
+                    log.error("Course group not found: {}", id);
+                    return new IllegalArgumentException("Course group not found with ID: " + id);
                 });
 
-        log.info("✅ Course group found: {}", courseGroup.getName());
-        return toCourseGroupDto(courseGroup);
+        return courseGroupMapper.toDto(courseGroup);
     }
 
     /**
-     * Get course groups by organisation ID.
+     * Retrieves all course groups for an organisation including their courses.
      */
     public List<CourseGroupDto> getCourseGroupsByOrganisationId(Long organisationId) {
-        log.info("🔄 Fetching course groups for organisation ID: {}", organisationId);
+        log.info("Fetching course groups for organisation ID: {}", organisationId);
+
         return courseGroupRepository.findByOrganisationId(organisationId).stream()
-                .map(courseGroup -> {
-                    CourseGroupDto dto = toCourseGroupDto(courseGroup);
-                    List<Course> courses = courseRepository.findByGroupId(courseGroup.getId());
-                    dto.setCourses(courses.stream().map(this::toCourseDto).collect(Collectors.toList()));
+                .map(group -> {
+                    CourseGroupDto dto = courseGroupMapper.toDto(group);
+                    List<Course> courses = courseRepository.findByGroupId(group.getId());
+                    dto.setCourses(courses.stream().map(courseGroupMapper::toCourseDto).collect(Collectors.toList()));
                     return dto;
                 })
                 .collect(Collectors.toList());
     }
 
     /**
-     * Update an existing course group.
+     * Updates an existing course group's name.
      */
-    public CourseGroupDto updateCourseGroup(Long courseGroupId, CourseGroupUpdateDto courseGroupUpdateDto) {
-        log.info("🔄 Updating course group ID: {}", courseGroupId);
-        CourseGroup courseGroup = courseGroupRepository.findById(courseGroupId)
+    public CourseGroupDto updateCourseGroup(Long id, CourseGroupUpdateDto dto) {
+        log.info("Updating course group ID: {}", id);
+
+        CourseGroup courseGroup = courseGroupRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("❌ Course group not found: {}", courseGroupId);
-                    return new IllegalArgumentException("Course group not found with ID: " + courseGroupId);
+                    log.error("Course group not found: {}", id);
+                    return new IllegalArgumentException("Course group not found with ID: " + id);
                 });
 
-        courseGroup.setName(courseGroupUpdateDto.getName());
+        courseGroup.setName(dto.getName());
 
-        CourseGroup updatedCourseGroup = courseGroupRepository.save(courseGroup);
-        log.info("✅ Course group updated successfully: {}", updatedCourseGroup.getId());
-        return toCourseGroupDto(updatedCourseGroup);
+        CourseGroup updated = courseGroupRepository.save(courseGroup);
+        return courseGroupMapper.toDto(updated);
     }
 
     /**
-     * Delete a course group by ID.
+     * Deletes a course group by its ID.
      */
-    public void deleteCourseGroup(Long courseGroupId) {
-        log.info("🔄 Deleting course group ID: {}", courseGroupId);
-        courseGroupRepository.deleteById(courseGroupId);
-        log.info("✅ Course group deleted: {}", courseGroupId);
-    }
-
-    private CourseGroupDto toCourseGroupDto(CourseGroup courseGroup) {
-        CourseGroupDto dto = new CourseGroupDto();
-        dto.setId(courseGroup.getId());
-        dto.setName(courseGroup.getName());
-        dto.setOrganisationId(courseGroup.getOrganisation().getId());
-        return dto;
-    }
-
-
-    private CourseDto toCourseDto(Course course) {
-        CourseDto dto = new CourseDto();
-        dto.setId(course.getId());
-        dto.setName(course.getName());
-        dto.setType(course.getType());
-        dto.setDuration(course.getDuration());
-        dto.setGroupId(course.getGroup().getId());
-        return dto;
+    public void deleteCourseGroup(Long id) {
+        log.info("Deleting course group ID: {}", id);
+        courseGroupRepository.deleteById(id);
     }
 }

@@ -35,6 +35,9 @@ public class StatsService {
     private final EndSurveyResponseRepository endSurveyResponseRepository;
     private final ProgrammeRepository programmeRepository;
 
+    /**
+     * Calculates and returns match statistics for an organisation.
+     */
     public OrganisationMatchStatsDto getOrganisationStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organisation not found with id: " + organisationId));
@@ -168,6 +171,9 @@ public class StatsService {
         return orgStats;
     }
 
+    /**
+     * Calculates engagement statistics for an organisation across all its programme years.
+     */
     @Transactional(readOnly = true)
     public OrganisationEngagementStatsDto getOrganisationEngagementStats(Long organisationId) {
         Organisation organisation = organisationRepository.findById(organisationId)
@@ -249,6 +255,9 @@ public class StatsService {
         return result;
     }
 
+    /**
+     * Calculates demographic distribution across courses, stages, and course groups.
+     */
     @Transactional(readOnly = true)
     public OrganisationDemographicStatsDto getOrganisationDemographics(Long orgId) {
         Organisation org = organisationRepository.findById(orgId)
@@ -320,6 +329,9 @@ public class StatsService {
         );
     }
 
+    /**
+     * Loads weekly engagement data points from logs for a given programme year.
+     */
     private Map<Long, Map<String, Long>> aggregateByYear(List<Object[]> rows) {
         Map<Long, Map<String, Long>> result = new HashMap<>();
         for (Object[] r : rows) {
@@ -331,6 +343,9 @@ public class StatsService {
         return result;
     }
 
+    /**
+     * Aggregates a list of DB row objects into a nested year-to-name-to-count map.
+     */
     private Map<String, Long> aggregateByName(List<Object[]> rows) {
         Map<String, Long> result = new HashMap<>();
         for (Object[] r : rows) {
@@ -341,29 +356,40 @@ public class StatsService {
         return result;
     }
 
+    /**
+     * Converts a name–count map into a list of CourseBreakdownDto.
+     */
     private List<CourseBreakdownDto> toCourseList(Map<String, Long> map) {
         return map.entrySet().stream()
                 .map(e -> new CourseBreakdownDto(e.getKey(), e.getValue()))
                 .toList();
     }
 
+    /**
+     * Converts a name–count map into a list of StageBreakdownDto.
+     */
     private List<StageBreakdownDto> toStageList(Map<String, Long> map) {
         return map.entrySet().stream()
                 .map(e -> new StageBreakdownDto(e.getKey(), e.getValue()))
                 .toList();
     }
 
+    /**
+     * Converts a name–count map into a list of CourseGroupBreakdownDto.
+     */
     private List<CourseGroupBreakdownDto> toGroupList(Map<String, Long> map) {
         return map.entrySet().stream()
                 .map(e -> new CourseGroupBreakdownDto(e.getKey(), e.getValue().intValue()))
                 .toList();
     }
 
+    /**
+     * Retrieves weekly engagement data for a specific programme year.
+     */
     private List<WeeklyEngagementPoint> getWeeklyEngagementStats(Long yearId) {
         List<Object[]> weeklyData = communicationLogRepository.findWeeklyEngagementByYear(yearId);
         return weeklyData.stream()
                 .map(row -> new WeeklyEngagementPoint((String) row[0], ((Long) row[1]).intValue()))
                 .collect(Collectors.toList());
     }
-
 }

@@ -9,6 +9,7 @@ import uk.bovykina.matching_guru.dto.programme.ProgrammeUpdateDto;
 import uk.bovykina.matching_guru.entity.CourseGroup;
 import uk.bovykina.matching_guru.entity.Organisation;
 import uk.bovykina.matching_guru.entity.Programme;
+import uk.bovykina.matching_guru.mapper.ProgrammeMapper;
 import uk.bovykina.matching_guru.repository.CourseGroupRepository;
 import uk.bovykina.matching_guru.repository.OrganisationRepository;
 import uk.bovykina.matching_guru.repository.ParticipantRepository;
@@ -41,6 +42,9 @@ class ProgrammeServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ProgrammeMapper programmeMapper;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -49,7 +53,8 @@ class ProgrammeServiceTest {
                 organisationRepository,
                 courseGroupRepository,
                 participantRepository,
-                userRepository
+                userRepository,
+                programmeMapper
         );
     }
 

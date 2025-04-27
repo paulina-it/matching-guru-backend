@@ -18,6 +18,9 @@ public class CsvExportService {
 
     private final MatchRepository matchRepository;
 
+    /**
+     * Exports match data for a given programme year to a CSV file.
+     */
     public ByteArrayInputStream exportMatchesToCsv(Long programmeYearId, int page, int size) {
         Page<Match> matchPage = matchRepository.findByProgrammeYearId(programmeYearId, PageRequest.of(page, size));
         List<Match> matches = matchPage.getContent();
@@ -25,11 +28,11 @@ public class CsvExportService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintWriter writer = new PrintWriter(out);
 
-        // CSV Headers
-        writer.println("Mentor ID,Mentor Name,Mentor Course,Mentor Academic Stage,Mentee ID,Mentee Name,Mentee Course,Mentee Academic Stage,Score,Status");
+        writer.println("Mentor ID,Mentor Name,Mentor Course,Mentor Academic Stage," +
+                "Mentee ID,Mentee Name,Mentee Course,Mentee Academic Stage,Score,Status");
 
         for (Match match : matches) {
-            writer.printf("%d,%s %s,%s,%s,%d,%s %s,%s,%s,%.2f,%s\n",
+            writer.printf("%d,%s %s,%s,%s,%d,%s %s,%s,%s,%.2f,%s%n",
                     match.getMentor().getId(),
                     match.getMentor().getUser().getFirstName(),
                     match.getMentor().getUser().getLastName(),
@@ -48,8 +51,6 @@ public class CsvExportService {
         }
 
         writer.flush();
-        writer.close();
-
         return new ByteArrayInputStream(out.toByteArray());
     }
 }

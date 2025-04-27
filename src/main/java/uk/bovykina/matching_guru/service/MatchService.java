@@ -19,6 +19,10 @@ import uk.bovykina.matching_guru.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service handling all match-related operations, including creation, updates,
+ * participant decisions, coordinator actions, and bulk status changes.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,12 +33,18 @@ public class MatchService {
     private final MatchMapper matchMapper;
     private final UserRepository userRepository;
 
+    /**
+     * Checks whether a match exists between a mentor and mentee.
+     */
     public boolean doesMatchExist(Long mentorId, Long menteeId) {
         boolean exists = matchRepository.existsByMentorIdAndMenteeId(mentorId, menteeId);
         log.debug("Match exists between mentor {} and mentee {}: {}", mentorId, menteeId, exists);
         return exists;
     }
 
+    /**
+     * Creates a match between a mentor and a mentee if it doesn't already exist.
+     */
     @Transactional
     public MatchResponseDto createMatch(MatchCreateDto dto) {
         log.info("Creating match: mentorId={}, menteeId={}", dto.getMentorId(), dto.getMenteeId());
@@ -60,15 +70,15 @@ public class MatchService {
         return matchMapper.toResponseDto(saved);
     }
 
+    /**
+     * Updates the status of a single match.
+     */
     @Transactional
     public MatchResponseDto updateMatchStatus(Long matchId, MatchStatusUpdateDto dto) {
         log.info("Updating match ID {} to status {}", matchId, dto.getStatus());
 
         Match match = matchRepository.findById(matchId)
-                .orElseThrow(() -> {
-                    log.error("Match not found: ID={}", matchId);
-                    return new IllegalArgumentException("Match not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Match not found"));
 
         match.setStatus(dto.getStatus());
         Match updated = matchRepository.save(match);
@@ -76,32 +86,44 @@ public class MatchService {
         return matchMapper.toResponseDto(updated);
     }
 
+    /**
+     * Retrieves a page of matches for a given ProgrammeYear.
+     */
     public Page<MatchResponseDto> getMatchesByProgrammeYearId(Long programmeYearId, Pageable pageable) {
         log.info("Fetching matches for programmeYearId={}", programmeYearId);
         return matchRepository.findByProgrammeYearId(programmeYearId, pageable)
                 .map(matchMapper::toResponseDto);
     }
 
+    /**
+     * Retrieves a match by ID as a simple response DTO.
+     */
     public MatchResponseDto getMatchById(Long matchId) {
         log.info("Fetching match ID {}", matchId);
         return matchMapper.toResponseDto(fetchMatch(matchId));
     }
 
+    /**
+     * Retrieves a detailed view of a match by its ID.
+     */
     public DetailedMatchResponseDto getDetailedMatchById(Long matchId) {
         log.info("Fetching detailed match for ID {}", matchId);
         return matchMapper.toDetailedResponseDto(fetchMatch(matchId));
     }
 
+    /**
+     * Retrieves a detailed match for a participant within a specific programme year.
+     */
     public DetailedMatchResponseDto getDetailedMatchByParticipantId(Long participantId, Long programmeYearId) {
         log.info("Fetching match for participantId={} in programmeYearId={}", participantId, programmeYearId);
         Match match = matchRepository.findByParticipantAndProgrammeYear(participantId, programmeYearId)
-                .orElseThrow(() -> {
-                    log.error("No match found for participantId={} in programmeYearId={}", participantId, programmeYearId);
-                    return new IllegalArgumentException("No match found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("No match found"));
         return matchMapper.toDetailedResponseDto(match);
     }
 
+    /**
+     * Updates the status of multiple matches in bulk and records who performed the update.
+     */
     @Transactional
     public void updateMatchStatus(List<Long> matchIds, MatchStatusUpdateDto statusUpdateDto) {
         log.info("Bulk updating matches to status={}, IDs={}", statusUpdateDto.getStatus(), matchIds);
@@ -111,7 +133,6 @@ public class MatchService {
                 : matchRepository.findAllById(matchIds);
 
         if (matches.isEmpty()) {
-            log.error("No matches found for provided IDs: {}", matchIds);
             throw new IllegalArgumentException("No matches found");
         }
 
@@ -120,7 +141,6 @@ public class MatchService {
 
         matches.forEach(match -> {
             match.setStatus(statusUpdateDto.getStatus());
-
             match.setEditedBy(user);
             match.setEditedByRole(user.getRole());
 
@@ -130,13 +150,8 @@ public class MatchService {
                 ParticipantInProgrammeYear mentor = match.getMentor();
                 ParticipantInProgrammeYear mentee = match.getMentee();
 
-                if (mentor != null && Boolean.TRUE.equals(mentor.getIsMatched())) {
-                    mentor.setIsMatched(false);
-                }
-
-                if (mentee != null && Boolean.TRUE.equals(mentee.getIsMatched())) {
-                    mentee.setIsMatched(false);
-                }
+                if (mentor != null && Boolean.TRUE.equals(mentor.getIsMatched())) mentor.setIsMatched(false);
+                if (mentee != null && Boolean.TRUE.equals(mentee.getIsMatched())) mentee.setIsMatched(false);
             }
         });
 
@@ -144,6 +159,9 @@ public class MatchService {
         log.info("✅ Updated {} matches to status {}", matches.size(), statusUpdateDto.getStatus());
     }
 
+    /**
+     * Searches matches for a coordinator by query, status, and sort options.
+     */
     public Page<CoordinatorMatchDto> searchMatches(
             Long programmeYearId,
             String query,
@@ -159,6 +177,9 @@ public class MatchService {
         return matchRepository.searchMatchSummaries(programmeYearId, safeQuery, status, pageable);
     }
 
+    /**
+     * Deletes all matches for a programme year and resets participant match flags.
+     */
     @Transactional
     public void deleteMatchesByProgrammeYear(Long programmeYearId) {
         log.info("Deleting all matches for programmeYearId={}", programmeYearId);
@@ -172,6 +193,9 @@ public class MatchService {
         log.info("Reset isMatched=false for {} participants", participants.size());
     }
 
+    /**
+     * Processes a participant's decision (accept/reject) on a match.
+     */
     @Transactional
     public void processParticipantDecision(MatchDecisionDto request) {
         Match match = matchRepository.findById(request.getMatchId())
@@ -204,18 +228,12 @@ public class MatchService {
 
     private ParticipantInProgrammeYear fetchParticipant(Long id, String role) {
         return participantRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("{} not found: ID={}", role, id);
-                    return new IllegalArgumentException(role + " not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException(role + " not found"));
     }
 
     private Match fetchMatch(Long matchId) {
         return matchRepository.findById(matchId)
-                .orElseThrow(() -> {
-                    log.error("Match not found: ID={}", matchId);
-                    return new IllegalArgumentException("Match not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Match not found"));
     }
 
     private Pageable buildPageable(int page, int size, String sortBy, String sortOrder) {

@@ -1,24 +1,19 @@
 package uk.bovykina.matching_guru.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeCreateDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeParticipantViewDto;
-import uk.bovykina.matching_guru.dto.programme.ProgrammeUpdateDto;
-import uk.bovykina.matching_guru.dto.user.UserResponseDto;
+import uk.bovykina.matching_guru.dto.programme.*;
 import uk.bovykina.matching_guru.entity.*;
-import uk.bovykina.matching_guru.repository.CourseGroupRepository;
-import uk.bovykina.matching_guru.repository.OrganisationRepository;
-import uk.bovykina.matching_guru.repository.ParticipantRepository;
-import uk.bovykina.matching_guru.repository.ProgrammeRepository;
-import uk.bovykina.matching_guru.repository.UserRepository;
+import uk.bovykina.matching_guru.mapper.ProgrammeMapper;
+import uk.bovykina.matching_guru.repository.*;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -29,134 +24,165 @@ public class ProgrammeService {
     private final CourseGroupRepository courseGroupRepository;
     private final ParticipantRepository participantRepository;
     private final UserRepository userRepository;
+    private final ProgrammeMapper programmeMapper;
 
-    public ProgrammeDto createProgramme(ProgrammeCreateDto programmeCreateDto) {
-        Organisation organisation = organisationRepository.findById(programmeCreateDto.getOrganisationId())
-                .orElseThrow(() -> new IllegalArgumentException("Organisation not found with ID: " + programmeCreateDto.getOrganisationId()));
+    /**
+     * Creates a new programme and links it to an existing organisation.
+     */
+    public ProgrammeDto createProgramme(ProgrammeCreateDto dto) {
+        log.info("Creating programme for organisation ID {}", dto.getOrganisationId());
 
-        Set<CourseGroup> courseGroups = courseGroupRepository.findAllById(programmeCreateDto.getCourseGroupIds())
-                .stream()
-                .collect(Collectors.toSet());
+        Organisation organisation = organisationRepository.findById(dto.getOrganisationId())
+                .orElseThrow(() -> {
+                    log.error("Organisation not found with ID: {}", dto.getOrganisationId());
+                    return new IllegalArgumentException("Organisation not found");
+                });
+
+        Set<CourseGroup> courseGroups = courseGroupRepository.findAllById(dto.getCourseGroupIds())
+                .stream().collect(Collectors.toSet());
 
         Programme programme = new Programme();
-        programme.setName(programmeCreateDto.getName());
-        programme.setDescription(programmeCreateDto.getDescription());
+        programme.setName(dto.getName());
+        programme.setDescription(dto.getDescription());
         programme.setOrganisation(organisation);
         programme.setEligibleCourseGroups(courseGroups);
 
-        Programme savedProgramme = programmeRepository.save(programme);
+        Programme saved = programmeRepository.save(programme);
+        int participants = participantRepository.countDistinctParticipantsByProgrammeId(saved.getId());
 
-        return toProgrammeDto(savedProgramme);
+        log.info("Programme created with ID: {}", saved.getId());
+        return programmeMapper.toDto(saved, participants);
     }
 
-    public ProgrammeDto updateProgramme(Long id, ProgrammeUpdateDto updateDto) {
+    /**
+     * Updates an existing programme's name and description.
+     */
+    public ProgrammeDto updateProgramme(Long id, ProgrammeUpdateDto dto) {
+        log.info("Updating programme ID {}", id);
+
         Programme programme = programmeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Programme not found with ID: " + id));
+                .orElseThrow(() -> {
+                    log.error("Programme not found with ID: {}", id);
+                    return new IllegalArgumentException("Programme not found");
+                });
 
-        programme.setName(updateDto.getName());
-        programme.setDescription(updateDto.getDescription());
+        programme.setName(dto.getName());
+        programme.setDescription(dto.getDescription());
 
-        return toProgrammeDto(programmeRepository.save(programme));
+        Programme updated = programmeRepository.save(programme);
+        int participants = participantRepository.countDistinctParticipantsByProgrammeId(updated.getId());
+
+        log.info("Programme updated: ID {}", updated.getId());
+        return programmeMapper.toDto(updated, participants);
     }
 
+    /**
+     * Deletes a programme by its ID.
+     */
     public void deleteProgramme(Long id) {
         if (!programmeRepository.existsById(id)) {
-            throw new IllegalArgumentException("Programme not found with ID: " + id);
+            log.error("Programme not found with ID: {}", id);
+            throw new IllegalArgumentException("Programme not found");
         }
         programmeRepository.deleteById(id);
+        log.info("Deleted programme with ID: {}", id);
     }
 
+    /**
+     * Retrieves all programmes with participant counts.
+     */
+    @Transactional(readOnly = true)
     public List<ProgrammeDto> getAllProgrammes() {
-        return programmeRepository.findAll()
-                .stream()
-                .map(this::toProgrammeDto)
+        log.info("Fetching all programmes");
+        return programmeRepository.findAll().stream()
+                .map(p -> programmeMapper.toDto(p, participantRepository.countDistinctParticipantsByProgrammeId(p.getId())))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all programmes associated with a specific organisation.
+     */
+    @Transactional(readOnly = true)
     public List<ProgrammeDto> getProgrammesByOrganisation(Long organisationId) {
-        return programmeRepository.findByOrganisationId(organisationId)
-                .stream()
-                .map(this::toProgrammeDto)
+        log.info("Fetching programmes for organisation ID {}", organisationId);
+        return programmeRepository.findByOrganisationId(organisationId).stream()
+                .map(p -> programmeMapper.toDto(p, participantRepository.countDistinctParticipantsByProgrammeId(p.getId())))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves active programmes for a given organisation.
+     */
+    @Transactional(readOnly = true)
     public List<ProgrammeDto> getActiveProgrammesByOrganisation(Long organisationId) {
-        return programmeRepository.findActiveProgrammesByOrganisationId(organisationId)
-                .stream()
-                .map(this::toProgrammeDto)
+        log.info("Fetching active programmes for organisation ID {}", organisationId);
+        return programmeRepository.findActiveProgrammesByOrganisationId(organisationId).stream()
+                .map(p -> programmeMapper.toDto(p, participantRepository.countDistinctParticipantsByProgrammeId(p.getId())))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a programme by its ID.
+     */
+    @Transactional(readOnly = true)
     public ProgrammeDto getProgrammeById(Long id) {
+        log.info("Fetching programme by ID {}", id);
         Programme programme = programmeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Programme not found with ID: " + id));
+                .orElseThrow(() -> {
+                    log.error("Programme not found with ID: {}", id);
+                    return new IllegalArgumentException("Programme not found");
+                });
 
-        return toProgrammeDto(programme);
+        int participants = participantRepository.countDistinctParticipantsByProgrammeId(programme.getId());
+        return programmeMapper.toDto(programme, participants);
     }
 
+    /**
+     * Retrieves all programmes linked to a specific user.
+     */
+    @Transactional(readOnly = true)
     public List<ProgrammeDto> getProgrammesByUserId(Long userId) {
+        log.info("Fetching programmes for user ID {}", userId);
         userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
 
         List<Programme> programmes = programmeRepository.findProgrammesByUserId(userId);
 
         return programmes.stream()
-                .map(this::toProgrammeDto)
+                .map(p -> programmeMapper.toDto(p, participantRepository.countDistinctParticipantsByProgrammeId(p.getId())))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves both current and available programmes for a given user.
+     */
+    @Transactional(readOnly = true)
     public ProgrammeParticipantViewDto getMyAndAvailableProgrammes(Long userId) {
+        log.info("Fetching my and available programmes for user ID {}", userId);
         List<ProgrammeDto> myProgrammes = getProgrammesByUserId(userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userId);
+                    return new IllegalArgumentException("User not found");
+                });
 
-        Course userCourse = user.getCourse();
-        CourseGroup userCourseGroup = (userCourse != null) ? userCourse.getGroup() : null;
-
+        CourseGroup userCourseGroup = user.getCourse() != null ? user.getCourse().getGroup() : null;
         List<Programme> activeProgrammes = programmeRepository.findActiveProgrammesByOrganisationId(user.getOrganisation().getId());
 
         List<ProgrammeDto> availableProgrammes = activeProgrammes.stream()
                 .filter(prog -> {
                     Set<CourseGroup> eligibleGroups = prog.getEligibleCourseGroups();
-                    if (eligibleGroups == null || eligibleGroups.isEmpty()) {
-                        return true;
-                    }
-                    return userCourseGroup != null && eligibleGroups.contains(userCourseGroup);
+                    return eligibleGroups == null || eligibleGroups.isEmpty() ||
+                            (userCourseGroup != null && eligibleGroups.contains(userCourseGroup));
                 })
-                .filter(prog -> myProgrammes.stream().noneMatch(myProg -> myProg.getId().equals(prog.getId())))
-                .map(this::toProgrammeDto)
+                .filter(prog -> myProgrammes.stream().noneMatch(mp -> mp.getId().equals(prog.getId())))
+                .map(p -> programmeMapper.toDto(p, participantRepository.countDistinctParticipantsByProgrammeId(p.getId())))
                 .toList();
 
         return new ProgrammeParticipantViewDto(myProgrammes, availableProgrammes);
     }
-
-    private ProgrammeDto toProgrammeDto(Programme programme) {
-        ProgrammeDto dto = new ProgrammeDto();
-        dto.setId(programme.getId());
-        dto.setName(programme.getName());
-        dto.setDescription(programme.getDescription());
-        dto.setOrganisationId(programme.getOrganisation().getId());
-
-        Set<CourseGroup> eligibleGroups = programme.getEligibleCourseGroups();
-
-        dto.setCourseGroupIds(
-                eligibleGroups.stream()
-                        .map(CourseGroup::getId)
-                        .collect(Collectors.toSet())
-        );
-        dto.setCourseGroups(
-                eligibleGroups.stream()
-                        .collect(Collectors.toMap(
-                                CourseGroup::getId,
-                                CourseGroup::getName
-                        ))
-        );
-
-        Integer participants = participantRepository.countDistinctParticipantsByProgrammeId(programme.getId());
-        dto.setParticipants(participants);
-
-        return dto;
-    }
-
 }

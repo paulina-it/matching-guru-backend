@@ -14,6 +14,9 @@ public class InviteService {
 
     private final InviteTokenRepository inviteTokenRepository;
 
+    /**
+     * Creates a new invite token for a user to join an organisation.
+     */
     public InviteToken createInvite(Long organisationId, String email, Long createdByUserId) {
         String token = UUID.randomUUID().toString();
         LocalDateTime expiryDate = LocalDateTime.now().plusDays(7);
@@ -29,6 +32,9 @@ public class InviteService {
         return inviteTokenRepository.save(invite);
     }
 
+    /**
+     * Validates an invite token and ensures it has not expired or been used.
+     */
     public InviteToken validateToken(String token) {
         InviteToken invite = inviteTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid invite token."));
@@ -44,6 +50,9 @@ public class InviteService {
         return invite;
     }
 
+    /**
+     * Marks an invite token as used.
+     */
     public void markTokenAsUsed(String token) {
         InviteToken invite = validateToken(token);
         invite.setUsed(true);

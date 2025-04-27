@@ -20,26 +20,22 @@ public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final MatchRepository matchRepository;
     private final ParticipantRepository participantRepository;
+    private final MeetingMapper meetingMapper = new MeetingMapper();
 
+    /**
+     * Schedules a new meeting between participants in a match.
+     */
     @Transactional
     public MeetingDto scheduleMeeting(MeetingDto meetingDto) {
-        log.info("Attempting to schedule meeting for participant ID: {} in match ID: {}", meetingDto.getParticipantId(), meetingDto.getMatchId());
+        log.info("Scheduling meeting for participant ID: {} in match ID: {}",
+                meetingDto.getParticipantId(), meetingDto.getMatchId());
 
-        // Fetching the match
         Match match = matchRepository.findById(meetingDto.getMatchId())
-                .orElseThrow(() -> {
-                    log.error("Match with ID: {} not found", meetingDto.getMatchId());
-                    return new IllegalArgumentException("Match not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Match not found"));
 
-        // Fetching the participant scheduling the meeting
         ParticipantInProgrammeYear participant = participantRepository.findById(meetingDto.getParticipantId())
-                .orElseThrow(() -> {
-                    log.error("Participant with ID: {} not found", meetingDto.getParticipantId());
-                    return new IllegalArgumentException("Participant not found");
-                });
+                .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
 
-        // Creating the meeting
         Meeting meeting = new Meeting();
         meeting.setMatch(match);
         meeting.setScheduledBy(participant);
@@ -48,22 +44,24 @@ public class MeetingService {
         meeting.setLocation(meetingDto.getLocation());
         meeting.setNotes(meetingDto.getNotes());
 
-        // Saving the meeting to the database
         meeting = meetingRepository.save(meeting);
-        log.info("Successfully scheduled meeting with ID: {}", meeting.getId());
+        log.info("Meeting scheduled successfully: ID={}", meeting.getId());
 
-        return toDto(meeting);
+        return meetingMapper.toDto(meeting);
     }
 
-    private MeetingDto toDto(Meeting meeting) {
-        MeetingDto dto = new MeetingDto();
-        dto.setId(meeting.getId());
-        dto.setMatchId(meeting.getMatch().getId());
-        dto.setParticipantId(meeting.getScheduledBy().getId()); // The participant who scheduled the meeting
-        dto.setTitle(meeting.getTitle());
-        dto.setDateTime(meeting.getDateTime());
-        dto.setLocation(meeting.getLocation());
-        dto.setNotes(meeting.getNotes());
-        return dto;
+    private static class MeetingMapper {
+
+        public MeetingDto toDto(Meeting meeting) {
+            MeetingDto dto = new MeetingDto();
+            dto.setId(meeting.getId());
+            dto.setMatchId(meeting.getMatch().getId());
+            dto.setParticipantId(meeting.getScheduledBy().getId());
+            dto.setTitle(meeting.getTitle());
+            dto.setDateTime(meeting.getDateTime());
+            dto.setLocation(meeting.getLocation());
+            dto.setNotes(meeting.getNotes());
+            return dto;
+        }
     }
 }
